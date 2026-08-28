@@ -2,7 +2,10 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { getMeta, setMeta, META_KEYS } from '@/services/meta'
 import { isConfigured, requestToken, revoke, hasToken } from '@/services/google/auth'
-import { createSpreadsheet, getSpreadsheetTitle, AuthExpiredError } from '@/services/google/sheets'
+import {
+  createSpreadsheet, getSpreadsheetTitle, listAppSpreadsheets, AuthExpiredError,
+} from '@/services/google/sheets'
+import type { DriveFile } from '@/services/google/sheets'
 import { runSync, pushAll } from '@/services/sync'
 import { useCategoryStore } from './categories'
 import { useRecordStore } from './records'
@@ -18,6 +21,7 @@ export const useCloudStore = defineStore('cloud', () => {
   const error = ref<string>('')
   const lastResult = ref<SyncResult | null>(null)
   const restored = ref(false)
+  const available = ref<DriveFile[]>([])
 
   const configured = computed(() => isConfigured())
   const linked = computed(() => sheetId.value !== null)
@@ -35,29 +39,56 @@ export const useCloudStore = defineStore('cloud', () => {
     return e instanceof Error ? e.message : '同步失敗'
   }
 
-  /** 首次連結：登入 → 建立私人試算表 → 把本機資料整份推上去 */
-  async function connect(): Promise<void> {
+  /**
+   * 登入並列出這個 Google 帳號底下、本 App 已建立的試算表。
+   *
+   * 第二台裝置必須走這一步再選擇既有的那份——sheetId 存在各裝置自己的
+   * IndexedDB 裡不會跨裝置傳遞，若直接建立新的就會變成兩份各自為政。
+   */
+  async function signInAndList(): Promise<DriveFile[]> {
     state.value = 'syncing'
     error.value = ''
 
     try {
       // 必須在使用者點擊的事件流程中呼叫，否則 popup 會被 Safari 攔截
       await requestToken(true)
+      available.value = await listAppSpreadsheets()
+      state.value = 'idle'
+      return available.value
+    } catch (e) {
+      state.value = e instanceof AuthExpiredError ? 'unauthorized' : 'error'
+      error.value = describeError(e)
+      throw e
+    }
+  }
 
+  /** 建立一份新的試算表並把本機資料整份推上去 */
+  async function createAndLink(): Promise<void> {
+    state.value = 'syncing'
+    error.value = ''
+
+    try {
       const id = await createSpreadsheet('我的觀看紀錄 — Watch Tracker')
       await pushAll(id)
-
-      sheetId.value = id
-      sheetTitle.value = await getSpreadsheetTitle(id)
-      await setMeta(META_KEYS.sheetId, id)
-      lastSyncedAt.value = (await getMeta<string>(META_KEYS.lastSyncedAt)) ?? null
-
+      await setLinked(id)
       state.value = 'idle'
     } catch (e) {
       state.value = 'error'
       error.value = describeError(e)
-      throw e
     }
+  }
+
+  /** 連結到既有的試算表，並立刻做一次雙向合併 */
+  async function linkExisting(file: DriveFile): Promise<void> {
+    await setLinked(file.id, file.name)
+    await sync(false)
+  }
+
+  async function setLinked(id: string, title?: string): Promise<void> {
+    sheetId.value = id
+    await setMeta(META_KEYS.sheetId, id)
+    sheetTitle.value = title ?? (await getSpreadsheetTitle(id))
+    lastSyncedAt.value = (await getMeta<string>(META_KEYS.lastSyncedAt)) ?? null
   }
 
   /**
@@ -145,6 +176,8 @@ export const useCloudStore = defineStore('cloud', () => {
   return {
     sheetId, sheetTitle, lastSyncedAt, state, error, lastResult,
     configured, linked, authorized,
-    restore, connect, sync, syncInBackground, overwriteRemote, disconnect,
+    available,
+    restore, signInAndList, createAndLink, linkExisting,
+    sync, syncInBackground, overwriteRemote, disconnect,
   }
 })

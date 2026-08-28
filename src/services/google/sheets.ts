@@ -125,22 +125,31 @@ export async function writeSheet(
   await call(`${SHEETS_API}/${spreadsheetId}/values/${clearRange}:clear`, { method: 'POST' })
 }
 
-interface DriveFile {
+export interface DriveFile {
   id: string
   name: string
+  createdTime?: string
+  modifiedTime?: string
 }
 
 interface DriveListResponse {
   files?: DriveFile[]
 }
 
-/** 列出本 App 曾建立的試算表，供「重新連結」使用 */
+/**
+ * 列出本 App 曾建立的試算表。
+ *
+ * drive.file 權限只看得到這個 OAuth 用戶端自己建立的檔案，
+ * 因此結果天然就只有本 App 的試算表，不會列出使用者的其他檔案。
+ * 第二台裝置要連結時，必須先呼叫這個函式，否則會重複建立一份新的。
+ */
 export async function listAppSpreadsheets(): Promise<DriveFile[]> {
   const query = encodeURIComponent(
     "mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
   )
   const result = await call<DriveListResponse>(
-    `${DRIVE_API}?q=${query}&fields=files(id,name)&pageSize=50`,
+    `${DRIVE_API}?q=${query}&fields=files(id,name,createdTime,modifiedTime)` +
+    `&orderBy=createdTime&pageSize=50`,
   )
   return result.files ?? []
 }

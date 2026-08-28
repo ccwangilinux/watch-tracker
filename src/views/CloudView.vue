@@ -2,10 +2,12 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import BottomSheet from '@/components/BottomSheet.vue'
 import { useCloudStore } from '@/stores/cloud'
 import { useCategoryStore } from '@/stores/categories'
 import { useRecordStore } from '@/stores/records'
-import { formatRelative } from '@/utils/datetime'
+import { formatRelative, formatDateTime } from '@/utils/datetime'
+import type { DriveFile } from '@/services/google/sheets'
 import {
   exportJson, downloadJson, parseBackup, importBackup, InvalidBackupError,
 } from '@/services/backup'
@@ -16,6 +18,7 @@ const cloud = useCloudStore()
 
 const confirmDisconnect = ref(false)
 const confirmOverwrite = ref(false)
+const pickerOpen = ref(false)
 const confirmImport = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const importMode = ref<ImportMode>('merge')
@@ -34,14 +37,35 @@ const statusText = computed(() => {
 
 onMounted(() => cloud.restore())
 
-async function connect() {
+async function startLink() {
   message.value = ''
   try {
-    await cloud.connect()
-    message.value = '已建立私人試算表並上傳目前的資料'
+    const files = await cloud.signInAndList()
+    if (files.length === 0) {
+      // 這個帳號還沒有本 App 的試算表，直接建立
+      await cloud.createAndLink()
+      message.value = '已建立私人試算表並上傳目前的資料'
+    } else {
+      // 已經有了就讓使用者選，避免第二台裝置又建立一份各自為政的檔案
+      pickerOpen.value = true
+    }
   } catch {
     // 錯誤訊息由 store 的 error 顯示
   }
+}
+
+async function chooseExisting(file: DriveFile) {
+  pickerOpen.value = false
+  message.value = ''
+  await cloud.linkExisting(file)
+  if (cloud.state === 'idle') message.value = `已連結「${file.name}」並完成同步`
+}
+
+async function createNew() {
+  pickerOpen.value = false
+  message.value = ''
+  await cloud.createAndLink()
+  if (cloud.state === 'idle') message.value = '已建立新的試算表並上傳目前的資料'
 }
 
 async function syncNow() {
@@ -133,14 +157,15 @@ async function doImport() {
         看不到你雲端硬碟裡的其他內容。
       </p>
       <button class="btn btn--primary" type="button" :disabled="cloud.state === 'syncing'"
-        @click="connect">
-        使用 Google 登入並建立試算表
+        @click="startLink">
+        使用 Google 登入
       </button>
     </template>
 
     <template v-else>
       <dl class="meta">
         <div><dt>試算表</dt><dd>{{ cloud.sheetTitle || '我的觀看紀錄' }}</dd></div>
+        <div><dt>檔案 ID</dt><dd class="meta__id">{{ cloud.sheetId }}</dd></div>
         <div><dt>最後同步</dt><dd>{{ formatRelative(cloud.lastSyncedAt) }}</dd></div>
       </dl>
 
@@ -186,6 +211,25 @@ async function doImport() {
       @change="onFileChosen"
     />
   </section>
+
+  <BottomSheet v-model="pickerOpen" title="選擇要連結的試算表">
+    <p class="note">
+      這個 Google 帳號底下已經有本 App 建立的試算表。
+      <strong>若要與其他裝置共用同一份資料，請選擇既有的那份</strong>，
+      不要建立新的——每份試算表都是獨立的，不會互相同步。
+    </p>
+
+    <ul class="files">
+      <li v-for="file in cloud.available" :key="file.id">
+        <button class="file" type="button" @click="chooseExisting(file)">
+          <span class="file__name">{{ file.name }}</span>
+          <span class="file__time">建立於 {{ formatDateTime(file.createdTime ?? null) }}</span>
+        </button>
+      </li>
+    </ul>
+
+    <button class="btn" type="button" @click="createNew">建立另一份新的試算表</button>
+  </BottomSheet>
 
   <ConfirmDialog
     v-model="confirmOverwrite"
@@ -294,6 +338,35 @@ async function doImport() {
 }
 
 .hint { font-size: 12px; line-height: 1.6; color: var(--text-faint); }
+
+.meta__id {
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--text-faint);
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.files { display: flex; flex-direction: column; gap: var(--sp-2); margin: var(--sp-4) 0; }
+
+.file {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  min-height: 56px;
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  text-align: left;
+}
+
+.file:active { border-color: var(--accent); background: var(--accent-soft); }
+.file__name { font-weight: 600; }
+.file__time { font-size: 12px; color: var(--text-faint); }
 
 .hidden-input { display: none; }
 </style>
