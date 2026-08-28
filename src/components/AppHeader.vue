@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import SearchBar from './SearchBar.vue'
+import { useUiStore } from '@/stores/ui'
 
-const keyword = ref('')
+// 搜尋字串放在 store：規格第 7 節要求下次開啟能還原上次的搜尋內容
+const { searchText } = storeToRefs(useUiStore())
 </script>
 
 <template>
   <header class="header">
     <div class="header__inner">
-      <SearchBar v-model="keyword" />
+      <SearchBar v-model="searchText" />
       <button class="header__status" type="button" aria-label="雲端同步狀態">
         <span class="header__dot" />
         <span class="header__cloud">☁</span>

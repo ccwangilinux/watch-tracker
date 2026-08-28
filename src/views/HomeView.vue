@@ -1,11 +1,27 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import CategoryCard from '@/components/CategoryCard.vue'
-import { DEFAULT_CATEGORIES } from '@/constants/defaultCategories'
+import EmptyState from '@/components/EmptyState.vue'
+import { useCategoryStore } from '@/stores/categories'
+import { useUiStore } from '@/stores/ui'
 
-// M1 階段直接顯示預設類別；M2 接上 IndexedDB 後改讀 store。
-const categories = DEFAULT_CATEGORIES
 const router = useRouter()
+const store = useCategoryStore()
+const { searchText, lastCategoryId } = storeToRefs(useUiStore())
+
+// Header 的搜尋框在首頁用來篩選類別；進入類別後才是搜尋紀錄
+const visible = computed(() => {
+  const keyword = searchText.value.trim().toLowerCase()
+  if (!keyword) return store.items
+  return store.items.filter((c) => c.name.toLowerCase().includes(keyword))
+})
+
+function openCategory(id: string) {
+  lastCategoryId.value = id
+  router.push(`/c/${id}`)
+}
 </script>
 
 <template>
@@ -18,16 +34,39 @@ const router = useRouter()
 
   <section class="section">
     <h2 class="section__title">觀看類別</h2>
-    <ul class="cats">
-      <li v-for="cat in categories" :key="cat.name">
-        <CategoryCard :name="cat.name" :icon="cat.icon" :color="cat.color" />
+
+    <p v-if="store.loading" class="loading">載入中…</p>
+
+    <EmptyState
+      v-else-if="visible.length === 0 && searchText"
+      icon="🔍"
+      title="找不到符合的類別"
+      :message="`沒有名稱包含「${searchText}」的類別`"
+    />
+
+    <EmptyState
+      v-else-if="visible.length === 0"
+      icon="📂"
+      title="還沒有任何類別"
+      message="新增第一個類別，開始記錄你的觀看進度"
+    />
+
+    <ul v-else class="cats">
+      <li v-for="cat in visible" :key="cat.id">
+        <CategoryCard
+          :name="cat.name"
+          :icon="cat.icon"
+          :color="cat.color"
+          :count="store.countOf(cat.id)"
+          @click="openCategory(cat.id)"
+        />
       </li>
     </ul>
   </section>
 
   <section class="section">
-    <button class="action action--primary" type="button">
-      <span aria-hidden="true">＋</span> 新增類別
+    <button class="action action--primary" type="button" @click="router.push('/settings/categories')">
+      <span aria-hidden="true">＋</span> 新增 / 管理類別
     </button>
   </section>
 
@@ -53,11 +92,7 @@ const router = useRouter()
   gap: var(--sp-1);
 }
 
-.brand__sub {
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--text-faint);
-}
+.brand__sub { font-size: 13px; font-weight: 400; color: var(--text-faint); }
 
 .section__title {
   font-size: 13px;
@@ -67,17 +102,11 @@ const router = useRouter()
   margin-bottom: var(--sp-3);
 }
 
-.cats {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-}
+.loading { color: var(--text-faint); font-size: 14px; }
 
-.actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--sp-3);
-}
+.cats { display: flex; flex-direction: column; gap: var(--sp-2); }
+
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
 
 .action {
   display: flex;
