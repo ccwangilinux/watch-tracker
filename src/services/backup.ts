@@ -95,7 +95,12 @@ export interface ImportResult {
 
 /**
  * merge  — 以 id 為準覆寫同 id 的資料，保留本機獨有的項目
- * replace— 清空後完全還原成備份的內容
+ * replace— 只留下備份中的資料，其餘標記為已刪除
+ *
+ * replace 刻意「不」實體清空資料表。
+ * 若直接 clear，那些資料在雲端仍然存在，下次同步時會被判定為
+ * 「只有雲端有」而重新拉回本機——取代的效果就被同步還原了。
+ * 改成留下 deletedAt 墓碑，刪除才能正確傳播到雲端與其他裝置。
  */
 export async function importBackup(
   backup: BackupFile,
@@ -103,9 +108,22 @@ export async function importBackup(
 ): Promise<ImportResult> {
   await db.transaction('rw', db.categories, db.watchRecords, async () => {
     if (mode === 'replace') {
-      await db.categories.clear()
-      await db.watchRecords.clear()
+      const timestamp = now()
+      const keptCategories = new Set(backup.categories.map((c) => c.id))
+      const keptRecords = new Set(backup.records.map((r) => r.id))
+
+      const staleCategories = (await db.categories.toArray())
+        .filter((c) => !keptCategories.has(c.id) && c.deletedAt === null)
+        .map((c) => ({ ...c, deletedAt: timestamp, updatedAt: timestamp }))
+
+      const staleRecords = (await db.watchRecords.toArray())
+        .filter((r) => !keptRecords.has(r.id) && r.deletedAt === null)
+        .map((r) => ({ ...r, deletedAt: timestamp, updatedAt: timestamp }))
+
+      if (staleCategories.length) await db.categories.bulkPut(staleCategories)
+      if (staleRecords.length) await db.watchRecords.bulkPut(staleRecords)
     }
+
     await db.categories.bulkPut(backup.categories)
     await db.watchRecords.bulkPut(backup.records)
   })

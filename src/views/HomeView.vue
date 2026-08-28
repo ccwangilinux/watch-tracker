@@ -164,7 +164,7 @@ function openCategory(id: string) {
 .loading { color: var(--text-faint); font-size: 14px; }
 
 .cats { display: flex; flex-direction: column; gap: var(--sp-2); }
-.records { display: flex; flex-direction: column; gap: var(--sp-3); }
+.records { display: flex; flex-direction: column; gap: var(--sp-2); }
 
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
 

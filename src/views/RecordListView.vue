@@ -145,7 +145,7 @@ watch(() => props.categoryId, (id) => {
 
 .loading { color: var(--text-faint); font-size: 14px; }
 
-.list { display: flex; flex-direction: column; gap: var(--sp-3); }
+.list { display: flex; flex-direction: column; gap: var(--sp-2); }
 
 /*
  * FAB 放右下角：手機單手操作時拇指最容易搆到的位置。

@@ -107,6 +107,29 @@ export const useCloudStore = defineStore('cloud', () => {
     await sync(false)
   }
 
+  /**
+   * 以本機資料整份覆蓋雲端，不做合併。
+   *
+   * 用於本機資料才是正確版本的情況——例如剛用「取代全部」匯入了一批資料，
+   * 這時走一般同步會把雲端的舊資料當成「只有雲端有」而拉回本機。
+   */
+  async function overwriteRemote(): Promise<void> {
+    if (!sheetId.value) return
+
+    state.value = 'syncing'
+    error.value = ''
+
+    try {
+      await requestToken(true)
+      await pushAll(sheetId.value)
+      lastSyncedAt.value = (await getMeta<string>(META_KEYS.lastSyncedAt)) ?? null
+      state.value = 'idle'
+    } catch (e) {
+      state.value = e instanceof AuthExpiredError ? 'unauthorized' : 'error'
+      error.value = describeError(e)
+    }
+  }
+
   async function disconnect(): Promise<void> {
     await revoke()
     sheetId.value = null
@@ -122,6 +145,6 @@ export const useCloudStore = defineStore('cloud', () => {
   return {
     sheetId, sheetTitle, lastSyncedAt, state, error, lastResult,
     configured, linked, authorized,
-    restore, connect, sync, syncInBackground, disconnect,
+    restore, connect, sync, syncInBackground, overwriteRemote, disconnect,
   }
 })

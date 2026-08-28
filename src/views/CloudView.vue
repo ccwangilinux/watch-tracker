@@ -15,6 +15,7 @@ const router = useRouter()
 const cloud = useCloudStore()
 
 const confirmDisconnect = ref(false)
+const confirmOverwrite = ref(false)
 const confirmImport = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const importMode = ref<ImportMode>('merge')
@@ -56,6 +57,12 @@ async function syncNow() {
       message.value += `（${ambiguous} 筆版本相同但內容不一致，已保留兩邊未覆寫）`
     }
   }
+}
+
+async function overwriteRemote() {
+  message.value = ''
+  await cloud.overwriteRemote()
+  if (cloud.state === 'idle') message.value = '已用本機資料覆蓋雲端'
 }
 
 async function doExport() {
@@ -141,6 +148,15 @@ async function doImport() {
         @click="syncNow">
         {{ cloud.state === 'syncing' ? '同步中…' : '立即同步' }}
       </button>
+      <button class="btn" type="button" :disabled="cloud.state === 'syncing'"
+        @click="confirmOverwrite = true">
+        以本機資料覆蓋雲端
+      </button>
+      <p class="hint">
+        一般情況用「立即同步」即可。剛用「取代全部」匯入資料後，
+        要改用這個把本機版本推上去，否則同步會把雲端的舊資料合併回來。
+      </p>
+
       <button class="btn" type="button" @click="confirmDisconnect = true">解除 Google 綁定</button>
     </template>
 
@@ -170,6 +186,15 @@ async function doImport() {
       @change="onFileChosen"
     />
   </section>
+
+  <ConfirmDialog
+    v-model="confirmOverwrite"
+    title="以本機資料覆蓋雲端"
+    message="雲端試算表的內容會被這台裝置上的資料完全取代。若其他裝置有尚未同步的變更，那些變更會遺失。"
+    confirm-text="覆蓋雲端"
+    danger
+    @confirm="overwriteRemote"
+  />
 
   <ConfirmDialog
     v-model="confirmDisconnect"
@@ -267,6 +292,8 @@ async function doImport() {
   background: color-mix(in srgb, var(--success) 12%, transparent);
   border-radius: var(--r-md);
 }
+
+.hint { font-size: 12px; line-height: 1.6; color: var(--text-faint); }
 
 .hidden-input { display: none; }
 </style>

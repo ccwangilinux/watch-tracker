@@ -3,7 +3,7 @@ import { db } from '@/db'
 import {
   exportJson, parseBackup, importBackup, InvalidBackupError, BACKUP_VERSION,
 } from './backup'
-import { createCategory, deleteCategory } from './categories'
+import { createCategory, deleteCategory, listCategories } from './categories'
 import { createRecord } from './records'
 
 beforeEach(async () => {
@@ -84,8 +84,8 @@ describe('importBackup', () => {
     expect(ids).toEqual([mine.id, 'from-backup'].sort())
   })
 
-  it('replace 模式清空後才還原', async () => {
-    await createCategory({ name: '會被清掉', icon: '🎬', color: '#fff' })
+  it('replace 模式只保留備份中的資料', async () => {
+    await createCategory({ name: '會被取代', icon: '🎬', color: '#fff' })
     const backup = {
       app: 'watch-tracker' as const, version: 1, exportedAt: '2026-01-01T00:00:00.000Z',
       categories: [{
@@ -98,8 +98,40 @@ describe('importBackup', () => {
 
     await importBackup(backup, 'replace')
 
-    const all = await db.categories.toArray()
-    expect(all.map((c) => c.id)).toEqual(['only'])
+    expect((await listCategories()).map((c) => c.id)).toEqual(['only'])
+  })
+
+  it('replace 模式把被取代的資料標記為刪除，而非實體清除', async () => {
+    const old = await createCategory({ name: '會被取代', icon: '🎬', color: '#fff' })
+
+    await importBackup({
+      app: 'watch-tracker', version: 1, exportedAt: '2026-01-01T00:00:00.000Z',
+      categories: [{
+        id: 'only', name: '唯一', icon: '📺', color: '#000', sortOrder: 0,
+        createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
+        deletedAt: null,
+      }],
+      records: [],
+    }, 'replace')
+
+    // 若實體清除，這筆在雲端仍然存在，下次同步會被當成「只有雲端有」拉回本機
+    const tombstone = await db.categories.get(old.id)
+    expect(tombstone).toBeDefined()
+    expect(tombstone!.deletedAt).not.toBeNull()
+  })
+
+  it('replace 模式不會重複標記已經刪除的資料', async () => {
+    const cat = await createCategory({ name: '早就刪了', icon: '🎬', color: '#fff' })
+    await deleteCategory(cat.id)
+    const deletedAt = (await db.categories.get(cat.id))!.deletedAt
+
+    await importBackup({
+      app: 'watch-tracker', version: 1, exportedAt: '2026-01-01T00:00:00.000Z',
+      categories: [], records: [],
+    }, 'replace')
+
+    // 原本的刪除時間必須保留，否則清理期限會被無限延後
+    expect((await db.categories.get(cat.id))!.deletedAt).toBe(deletedAt)
   })
 
   it('同 id 的資料會被備份內容覆寫', async () => {
