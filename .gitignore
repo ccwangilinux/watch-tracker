@@ -11,3 +11,4 @@ dist-ssr/
 
 # 開發參考資料：規格 PDF 與設計稿。設計稿含個人信箱，且 repo 為 Public，故不進版控
 docs/
+*.tsbuildinfo
