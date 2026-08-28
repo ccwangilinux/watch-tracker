@@ -15,6 +15,7 @@ export const META_KEYS = {
   lastViewMode: 'lastViewMode',
   sheetId: 'sheetId',
   lastSyncedAt: 'lastSyncedAt',
+  autoSync: 'autoSync',
   seeded: 'seeded',
 } as const
 

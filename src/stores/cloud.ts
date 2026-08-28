@@ -22,6 +22,8 @@ export const useCloudStore = defineStore('cloud', () => {
   const lastResult = ref<SyncResult | null>(null)
   const restored = ref(false)
   const available = ref<DriveFile[]>([])
+  /** 啟動時是否自動在背景同步 */
+  const autoSync = ref(false)
 
   const configured = computed(() => isConfigured())
   const linked = computed(() => sheetId.value !== null)
@@ -31,6 +33,8 @@ export const useCloudStore = defineStore('cloud', () => {
     if (restored.value) return
     sheetId.value = (await getMeta<string>(META_KEYS.sheetId)) ?? null
     lastSyncedAt.value = (await getMeta<string>(META_KEYS.lastSyncedAt)) ?? null
+    // 預設關閉：同步會同時改動本機與雲端，預設交由使用者按下才執行
+    autoSync.value = (await getMeta<boolean>(META_KEYS.autoSync)) ?? false
     restored.value = true
   }
 
@@ -78,10 +82,14 @@ export const useCloudStore = defineStore('cloud', () => {
     }
   }
 
-  /** 連結到既有的試算表，並立刻做一次雙向合併 */
+  /**
+   * 連結到既有的試算表。
+   *
+   * 刻意不自動同步：合併會同時改動本機與雲端，
+   * 使用者應該先確認連到的是哪一份、內容是否正確，再自行決定要不要同步。
+   */
   async function linkExisting(file: DriveFile): Promise<void> {
     await setLinked(file.id, file.name)
-    await sync(false)
   }
 
   async function setLinked(id: string, title?: string): Promise<void> {
@@ -122,9 +130,11 @@ export const useCloudStore = defineStore('cloud', () => {
   /**
    * 啟動時的背景同步（規格第 6 節）。
    * 絕不阻塞畫面，失敗也不打擾使用者——本機資料本來就已經顯示出來了。
+   * 可由設定關閉：同步會同時改動兩邊，有些人希望完全由自己決定時機。
    */
   async function syncInBackground(): Promise<void> {
     await restore()
+    if (!autoSync.value) return
     if (!sheetId.value || !configured.value) return
 
     try {
@@ -185,6 +195,11 @@ export const useCloudStore = defineStore('cloud', () => {
     }
   }
 
+  async function setAutoSync(enabled: boolean): Promise<void> {
+    autoSync.value = enabled
+    await setMeta(META_KEYS.autoSync, enabled)
+  }
+
   async function disconnect(): Promise<void> {
     await revoke()
     sheetId.value = null
@@ -200,8 +215,8 @@ export const useCloudStore = defineStore('cloud', () => {
   return {
     sheetId, sheetTitle, lastSyncedAt, state, error, lastResult,
     configured, linked, authorized,
-    available,
-    restore, signInAndList, createAndLink, linkExisting,
+    available, autoSync,
+    restore, signInAndList, createAndLink, linkExisting, setAutoSync,
     sync, syncInBackground, overwriteRemote, overwriteLocal, disconnect,
   }
 })

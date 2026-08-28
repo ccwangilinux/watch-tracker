@@ -26,10 +26,14 @@
   --accent-2:      #ff4fa3;
   --gradient:      linear-gradient(135deg, #7c5cff 0%, #ff4fa3 100%);
 
-  /* 觀看狀態（已完結是獨立維度，用 --success） */
-  --st-watching: #5ad1ee;
-  --st-waiting:  #ffb648;
-  --st-planned:  #8395b8;
+  /*
+   * 觀看狀態（已完結是獨立維度，用 --success）。
+   * 刻意與下方的季/集/時間分屬不同色系：狀態原本用的青色與集數完全相同，
+   * 同一張卡片上兩個青色標籤並排無法一眼分辨誰是誰。
+   */
+  --st-watching: #ff6b9d;
+  --st-waiting:  #ff8c42;
+  --st-planned:  #94a3b8;
 
   /* 紀錄欄位：季 / 集 / 觀看時間各自可辨識的顏色 */
   --season:  #c4a5ff;

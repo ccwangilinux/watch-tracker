@@ -48,12 +48,15 @@ function onCopy(event: Event) {
       </span>
 
       <span v-if="hasMeta" class="card__row card__row--meta">
+        <span class="meta__info">
+          <span v-if="hasSeason" class="tag tag--season">{{ formatSeason(record.season) }}</span>
+          <span v-if="hasEpisode" class="tag tag--episode">第 {{ record.episode }} 集</span>
+          <span v-if="hasTime" class="tag tag--time">{{ formatWatchTime(record.watchTime) }}</span>
+        </span>
+
         <span v-if="status" class="tag tag--status" :style="{ '--tag-c': status.color }">
           <span aria-hidden="true">{{ status.icon }}</span>{{ status.label }}
         </span>
-        <span v-if="hasSeason" class="tag tag--season">{{ formatSeason(record.season) }}</span>
-        <span v-if="hasEpisode" class="tag tag--episode">第 {{ record.episode }} 集</span>
-        <span v-if="hasTime" class="tag tag--time">{{ formatWatchTime(record.watchTime) }}</span>
       </span>
     </button>
 
@@ -121,9 +124,18 @@ function onCopy(event: Event) {
 
 .card__row--meta {
   gap: var(--sp-2);
-  align-items: baseline;
+  align-items: center;
+  /* 觀看資訊靠左、狀態靠右，兩群資訊各據一側不會混讀 */
+  justify-content: space-between;
+  margin-top: 3px;
+}
+
+.meta__info {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
   flex-wrap: wrap;
-  margin-top: 2px;
 }
 
 .tag {
@@ -139,11 +151,13 @@ function onCopy(event: Event) {
 }
 
 .tag--status {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  /* 狀態是主要的辨識依據，底色比其他標籤重一點 */
-  background: color-mix(in srgb, var(--tag-c) 20%, transparent);
+  /* 外框樣式：左側資訊是填色標籤，狀態走外框，即使色相接近也分得出來 */
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--tag-c) 55%, transparent);
 }
 
 .tag--season  { --tag-c: var(--season); }

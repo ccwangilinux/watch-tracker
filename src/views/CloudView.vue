@@ -60,7 +60,7 @@ async function chooseExisting(file: DriveFile) {
   pickerOpen.value = false
   message.value = ''
   await cloud.linkExisting(file)
-  if (cloud.state === 'idle') message.value = `已連結「${file.name}」並完成同步`
+  message.value = `已連結「${file.name}」。確認無誤後再按「立即同步」`
 }
 
 async function createNew() {
@@ -182,6 +182,18 @@ async function doImport() {
         @click="syncNow">
         {{ cloud.state === 'syncing' ? '同步中…' : '立即同步' }}
       </button>
+      <label class="switch">
+        <span>
+          啟動時自動同步
+          <small>關閉時完全由你按下「立即同步」才會與雲端交換資料</small>
+        </span>
+        <input
+          type="checkbox"
+          :checked="cloud.autoSync"
+          @change="cloud.setAutoSync(($event.target as HTMLInputElement).checked)"
+        />
+      </label>
+
       <button class="btn" type="button" :disabled="cloud.state === 'syncing'"
         @click="startLink">
         更換連結的試算表
@@ -446,6 +458,35 @@ async function doImport() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  min-height: 52px;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.switch small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+
+.switch input {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  accent-color: var(--accent);
 }
 
 .conflicts {
