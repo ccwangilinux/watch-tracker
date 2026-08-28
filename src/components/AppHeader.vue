@@ -1,18 +1,43 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useRouter } from 'vue-router'
 import SearchBar from './SearchBar.vue'
 import { useUiStore } from '@/stores/ui'
+import { useCloudStore } from '@/stores/cloud'
 
 // 搜尋字串放在 store：規格第 7 節要求下次開啟能還原上次的搜尋內容
 const { searchText } = storeToRefs(useUiStore())
+
+const router = useRouter()
+const cloud = useCloudStore()
+
+const dotClass = computed(() => {
+  if (!cloud.linked) return 'is-off'
+  return `is-${cloud.state}`
+})
+
+const statusLabel = computed(() => {
+  if (!cloud.linked) return '未連結雲端'
+  if (cloud.state === 'syncing') return '同步中'
+  if (cloud.state === 'error') return '同步失敗'
+  if (cloud.state === 'unauthorized') return '需要重新授權'
+  return '已同步'
+})
 </script>
 
 <template>
   <header class="header">
     <div class="header__inner">
       <SearchBar v-model="searchText" />
-      <button class="header__status" type="button" aria-label="雲端同步狀態">
-        <span class="header__dot" />
+      <button
+        class="header__status"
+        type="button"
+        :aria-label="`雲端同步狀態：${statusLabel}`"
+        :title="statusLabel"
+        @click="router.push('/settings/cloud')"
+      >
+        <span class="header__dot" :class="dotClass" />
         <span class="header__cloud">☁</span>
       </button>
     </div>
@@ -68,4 +93,12 @@ const { searchText } = storeToRefs(useUiStore())
   background: var(--text-faint);
   border: 2px solid var(--bg);
 }
+
+.header__dot.is-off { background: var(--text-faint); }
+.header__dot.is-idle { background: var(--success); }
+.header__dot.is-syncing { background: var(--warning); animation: blink 1s ease-in-out infinite; }
+.header__dot.is-error { background: var(--danger); }
+.header__dot.is-unauthorized { background: var(--warning); }
+
+@keyframes blink { 50% { opacity: 0.25; } }
 </style>
