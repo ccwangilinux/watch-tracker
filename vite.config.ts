@@ -53,5 +53,11 @@ export default defineConfig({
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
-  server: { host: true },
+  server: {
+    host: true, // 允許同網段的手機連入
+    // 固定埠號並在被占用時直接報錯：Google OAuth 的「已授權的 JavaScript 來源」
+    // 是逐字比對的，埠號一跳掉授權就會被拒，寧可起不來也不要靜靜換埠。
+    port: 5174,
+    strictPort: true,
+  },
 })
