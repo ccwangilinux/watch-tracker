@@ -26,6 +26,11 @@
   --accent-2:      #ff4fa3;
   --gradient:      linear-gradient(135deg, #7c5cff 0%, #ff4fa3 100%);
 
+  /* 觀看狀態（已完結是獨立維度，用 --success） */
+  --st-watching: #5ad1ee;
+  --st-waiting:  #ffb648;
+  --st-planned:  #8395b8;
+
   /* 紀錄欄位：季 / 集 / 觀看時間各自可辨識的顏色 */
   --season:  #c4a5ff;
   --episode: #5ad1ee;

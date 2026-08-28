@@ -84,12 +84,12 @@ describe('deleteCategory', () => {
     await db.watchRecords.bulkAdd([
       {
         id: uuid(), categoryId: cat.id, title: '片1', season: 1, episode: 1,
-        watchTime: 0, completed: false, sortOrder: 0, note: '',
+        watchTime: 0, status: null, completed: false, sortOrder: 0, note: '',
         createdAt: timestamp, updatedAt: timestamp, deletedAt: null,
       },
       {
         id: uuid(), categoryId: cat.id, title: '片2', season: 1, episode: 2,
-        watchTime: 0, completed: false, sortOrder: 1, note: '',
+        watchTime: 0, status: null, completed: false, sortOrder: 1, note: '',
         createdAt: timestamp, updatedAt: timestamp, deletedAt: null,
       },
     ])
@@ -121,12 +121,12 @@ describe('countRecordsByCategory', () => {
     await db.watchRecords.bulkAdd([
       {
         id: uuid(), categoryId: cat.id, title: '在', season: 1, episode: 1,
-        watchTime: 0, completed: false, sortOrder: 0, note: '',
+        watchTime: 0, status: null, completed: false, sortOrder: 0, note: '',
         createdAt: timestamp, updatedAt: timestamp, deletedAt: null,
       },
       {
         id: uuid(), categoryId: cat.id, title: '已刪', season: 1, episode: 1,
-        watchTime: 0, completed: false, sortOrder: 1, note: '',
+        watchTime: 0, status: null, completed: false, sortOrder: 1, note: '',
         createdAt: timestamp, updatedAt: timestamp, deletedAt: timestamp,
       },
     ])

@@ -27,6 +27,16 @@ export interface Category extends Syncable {
   sortOrder: number
 }
 
+/**
+ * 觀看狀態。互斥的單一值，而非多選標籤——
+ * 多選要序列化才能存進 Sheets，篩選與 UI 也複雜一個量級，
+ * 而「待看」與「正在看」本來就不可能同時成立。
+ *
+ * 不包含「已完結」：完結是另一個獨立維度（由 completed 表示），
+ * 一部劇可以同時是「等更新」且尚未完結。兩者混成同一個欄位會失去這個區別。
+ */
+export type WatchStatus = 'planned' | 'watching' | 'waiting'
+
 export interface WatchRecord extends Syncable {
   categoryId: string
   title: string
@@ -36,6 +46,9 @@ export interface WatchRecord extends Syncable {
   episode: number
   /** 總秒數 */
   watchTime: number
+  /** null 代表尚未標記狀態，不臆測使用者的意圖 */
+  status: WatchStatus | null
+  /** 是否完結。與 status 互相獨立 */
   completed: boolean
   sortOrder: number
   /** 規格預留欄位 */
@@ -48,6 +61,7 @@ export type SortKey =
   | 'season'
   | 'episode'
   | 'watchTime'
+  | 'status'
   | 'updatedAt'
   | 'createdAt'
   | 'custom'

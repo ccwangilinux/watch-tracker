@@ -29,6 +29,27 @@ export class WatchTrackerDB extends Dexie {
       watchRecords: 'id, categoryId, updatedAt, deletedAt, [categoryId+sortOrder]',
       meta: 'key',
     })
+
+    /**
+     * v2：新增觀看狀態。
+     *
+     * 既有資料的狀態一律留 null，不做任何推斷。
+     * 從集數或觀看時間猜測看似方便，但猜錯的部分使用者還是得
+     * 逐筆檢查，留空至少是誠實的「還沒標」。
+     * completed 是另一個獨立維度，不受這次遷移影響。
+     *
+     * status 不建索引：值域只有四種，索引的選擇性太差，
+     * 而且 null 本來就無法建立 IndexedDB 索引。
+     */
+    this.version(2).stores({
+      categories: 'id, sortOrder, updatedAt, deletedAt',
+      watchRecords: 'id, categoryId, updatedAt, deletedAt, [categoryId+sortOrder]',
+      meta: 'key',
+    }).upgrade(async (tx) => {
+      await tx.table('watchRecords').toCollection().modify((record) => {
+        record.status = null
+      })
+    })
   }
 }
 

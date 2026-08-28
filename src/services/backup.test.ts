@@ -149,7 +149,7 @@ describe('importBackup', () => {
     const cat = await createCategory({ name: 'A', icon: '🎬', color: '#fff' })
     await createRecord({
       categoryId: cat.id, title: 'X', season: 1, episode: 1,
-      watchTime: 0, completed: false, note: '',
+      watchTime: 0, status: null, completed: false, note: '',
     })
     const backup = await exportJson()
 

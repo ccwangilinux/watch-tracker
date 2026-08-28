@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import AutoTextarea from '@/components/AutoTextarea.vue'
 import Stepper from '@/components/Stepper.vue'
 import ToggleSwitch from '@/components/ToggleSwitch.vue'
+import StatusPicker from '@/components/StatusPicker.vue'
 import SeasonPicker from '@/components/SeasonPicker.vue'
 import DurationPicker from '@/components/DurationPicker.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
@@ -12,6 +13,7 @@ import { useRecordStore } from '@/stores/records'
 import { useCategoryStore } from '@/stores/categories'
 import { formatWatchTime } from '@/utils/time'
 import { formatSeason } from '@/utils/season'
+import type { WatchStatus } from '@/types/models'
 
 const props = defineProps<{ recordId?: string; categoryId?: string }>()
 
@@ -25,6 +27,7 @@ const title = ref('')
 const season = ref(1)
 const episode = ref(1)
 const watchTime = ref(0)
+const status = ref<WatchStatus | null>(null)
 const completed = ref(false)
 const note = ref('')
 const resolvedCategoryId = ref(props.categoryId ?? '')
@@ -51,6 +54,7 @@ onMounted(async () => {
     season.value = record.season
     episode.value = record.episode
     watchTime.value = record.watchTime
+    status.value = record.status
     completed.value = record.completed
     note.value = record.note
     resolvedCategoryId.value = record.categoryId
@@ -79,6 +83,7 @@ async function save() {
     season: season.value,
     episode: episode.value,
     watchTime: watchTime.value,
+    status: status.value,
     completed: completed.value,
     note: note.value.trim(),
   }
@@ -138,6 +143,12 @@ async function doDelete() {
         <span class="picker__value picker__value--time">{{ formatWatchTime(watchTime) }}</span>
         <span class="picker__hint">選擇 ›</span>
       </button>
+    </div>
+
+    <div class="field">
+      <span class="field__label">觀看狀態 <em class="optional">選填</em></span>
+      <StatusPicker v-model="status" />
+      <p class="field__hint">點選已選中的項目可取消標記</p>
     </div>
 
     <div class="field">
@@ -223,6 +234,9 @@ async function doDelete() {
 }
 
 .field__label em { font-style: normal; color: var(--accent-2); margin-left: var(--sp-1); }
+.field__label em.optional { color: var(--text-faint); font-weight: 400; }
+
+.field__hint { margin-top: var(--sp-2); font-size: 12px; color: var(--text-faint); }
 
 .field__input {
   width: 100%;

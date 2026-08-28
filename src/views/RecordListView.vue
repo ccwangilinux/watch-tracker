@@ -9,13 +9,15 @@ import { useRecordStore } from '@/stores/records'
 import { useCategoryStore } from '@/stores/categories'
 import { useUiStore } from '@/stores/ui'
 import { sortRecords, SORT_OPTIONS } from '@/services/records'
+import { STATUS_LIST, UNSET_LABEL } from '@/constants/status'
 
 const props = defineProps<{ categoryId: string }>()
 
 const router = useRouter()
 const recordStore = useRecordStore()
 const categoryStore = useCategoryStore()
-const { searchText, sortKey, sortDirection, lastCategoryId } = storeToRefs(useUiStore())
+const { searchText, sortKey, sortDirection, lastCategoryId, statusFilter } =
+  storeToRefs(useUiStore())
 
 const sortOpen = ref(false)
 
@@ -23,11 +25,38 @@ const category = computed(() => categoryStore.items.find((c) => c.id === props.c
 
 const visible = computed(() => {
   const keyword = searchText.value.trim().toLowerCase()
-  const filtered = keyword
+  let filtered = keyword
     ? recordStore.items.filter((r) => r.title.toLowerCase().includes(keyword))
     : recordStore.items
+
+  if (statusFilter.value) {
+    const wanted = statusFilter.value === 'unset' ? null : statusFilter.value
+    filtered = filtered.filter((r) => (r.status ?? null) === wanted)
+  }
+
   return sortRecords(filtered, sortKey.value, sortDirection.value)
 })
+
+/** 篩選列上各狀態的筆數，只算這個類別的 */
+const statusCounts = computed(() => {
+  const counts: Record<string, number> = { unset: 0 }
+  for (const record of recordStore.items) {
+    const key = record.status ?? 'unset'
+    counts[key] = (counts[key] ?? 0) + 1
+  }
+  return counts
+})
+
+const filterChips = computed(() => [
+  ...STATUS_LIST.map((s) => ({
+    key: s.key as string, label: s.label, color: s.color, count: statusCounts.value[s.key] ?? 0,
+  })),
+  { key: 'unset', label: UNSET_LABEL, color: 'var(--text-faint)', count: statusCounts.value.unset },
+].filter((chip) => chip.count > 0))
+
+function toggleFilter(key: string) {
+  statusFilter.value = statusFilter.value === key ? null : (key as typeof statusFilter.value)
+}
 
 const sortLabel = computed(
   () => SORT_OPTIONS.find((o) => o.key === sortKey.value)?.label ?? '排序',
@@ -55,6 +84,25 @@ watch(() => props.categoryId, (id) => {
       <span class="head__count">{{ visible.length }}</span>
     </h1>
   </header>
+
+  <div v-if="filterChips.length > 1" class="filters">
+    <button
+      class="chip"
+      :class="{ 'is-active': statusFilter === null }"
+      type="button"
+      @click="statusFilter = null"
+    >全部 {{ recordStore.items.length }}</button>
+
+    <button
+      v-for="chip in filterChips"
+      :key="chip.key"
+      class="chip"
+      :class="{ 'is-active': statusFilter === chip.key }"
+      :style="{ '--c': chip.color }"
+      type="button"
+      @click="toggleFilter(chip.key)"
+    >{{ chip.label }} {{ chip.count }}</button>
+  </div>
 
   <button class="sort" type="button" @click="sortOpen = true">
     <span aria-hidden="true">⇅</span>
@@ -124,6 +172,38 @@ watch(() => props.categoryId, (id) => {
   color: var(--text-faint);
   background: var(--surface-2);
   border-radius: var(--r-full);
+}
+
+.filters {
+  display: flex;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  /* 橫向捲動而不換行：篩選列固定一行，不會把列表擠下去 */
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.filters::-webkit-scrollbar { display: none; }
+
+.chip {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 var(--sp-3);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-full);
+  white-space: nowrap;
+}
+
+.chip.is-active {
+  color: var(--c, var(--accent));
+  border-color: color-mix(in srgb, var(--c, var(--accent)) 55%, transparent);
+  background: color-mix(in srgb, var(--c, var(--accent)) 16%, transparent);
 }
 
 .sort {

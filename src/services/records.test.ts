@@ -7,6 +7,8 @@ import {
   updateRecord,
   deleteRecord,
   sortRecords,
+  countByStatus,
+  listByStatus,
 } from './records'
 import type { WatchRecord } from '@/types/models'
 
@@ -19,6 +21,7 @@ function baseInput(overrides: Partial<Parameters<typeof createRecord>[0]> = {}) 
     season: 1,
     episode: 1,
     watchTime: 0,
+    status: null,
     completed: false,
     note: '',
     ...overrides,
@@ -28,7 +31,7 @@ function baseInput(overrides: Partial<Parameters<typeof createRecord>[0]> = {}) 
 function fakeRecord(overrides: Partial<WatchRecord>): WatchRecord {
   return {
     id: 'x', categoryId: CATEGORY, title: '片', season: 1, episode: 1,
-    watchTime: 0, completed: false, sortOrder: 0, note: '',
+    watchTime: 0, status: null, completed: false, sortOrder: 0, note: '',
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     deletedAt: null,
@@ -160,5 +163,60 @@ describe('sortRecords', () => {
     const before = records.map((r) => r.id)
     sortRecords(records, 'title', 'asc')
     expect(records.map((r) => r.id)).toEqual(before)
+  })
+})
+
+describe('觀看狀態', () => {
+  it('新紀錄預設不帶狀態', async () => {
+    const record = await createRecord(baseInput())
+    // 從集數或觀看時間推斷會誤標，留空才是誠實的「還沒標」
+    expect(record.status).toBeNull()
+  })
+
+  it('countByStatus 把未標記的歸到 unset', async () => {
+    await createRecord(baseInput({ title: 'A', status: 'watching' }))
+    await createRecord(baseInput({ title: 'B', status: 'watching' }))
+    await createRecord(baseInput({ title: 'C', status: 'waiting' }))
+    await createRecord(baseInput({ title: 'D' }))
+
+    const counts = await countByStatus()
+    expect(counts.watching).toBe(2)
+    expect(counts.waiting).toBe(1)
+    expect(counts.unset).toBe(1)
+  })
+
+  it('countByStatus 不計入已刪除的紀錄', async () => {
+    const record = await createRecord(baseInput({ status: 'watching' }))
+    await deleteRecord(record.id)
+    expect((await countByStatus()).watching ?? 0).toBe(0)
+  })
+
+  it('listByStatus 傳 null 時列出尚未標記的', async () => {
+    await createRecord(baseInput({ title: '有標', status: 'planned' }))
+    await createRecord(baseInput({ title: '沒標' }))
+
+    expect((await listByStatus(null)).map((r) => r.title)).toEqual(['沒標'])
+    expect((await listByStatus('planned')).map((r) => r.title)).toEqual(['有標'])
+  })
+
+  it('依狀態排序時未標記的排在最後', () => {
+    const records = [
+      fakeRecord({ id: '1', title: 'A', status: null }),
+      fakeRecord({ id: '2', title: 'B', status: 'planned' }),
+      fakeRecord({ id: '3', title: 'C', status: 'watching' }),
+      fakeRecord({ id: '4', title: 'D', status: 'waiting' }),
+    ]
+    // STATUS_LIST 的順序是 watching → waiting → planned，未標記殿後
+    expect(sortRecords(records, 'status', 'asc').map((r) => r.id)).toEqual(['3', '4', '2', '1'])
+  })
+
+  it('狀態與完結是各自獨立的欄位', async () => {
+    const record = await createRecord(baseInput({ status: 'waiting', completed: false }))
+    await updateRecord(record.id, { completed: true })
+
+    const updated = await db.watchRecords.get(record.id)
+    // 標記完結不該把等更新的標籤清掉
+    expect(updated?.completed).toBe(true)
+    expect(updated?.status).toBe('waiting')
   })
 })

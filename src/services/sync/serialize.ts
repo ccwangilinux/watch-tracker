@@ -1,4 +1,4 @@
-import type { Category, WatchRecord } from '@/types/models'
+import type { Category, WatchRecord, WatchStatus } from '@/types/models'
 
 /**
  * 資料物件與 Google Sheets 列的互轉。
@@ -15,9 +15,11 @@ export const CATEGORY_HEADERS = [
 ] as const
 
 export const RECORD_HEADERS = [
-  'id', 'categoryId', 'title', 'season', 'episode', 'watchTime', 'completed',
+  'id', 'categoryId', 'title', 'season', 'episode', 'watchTime', 'status', 'completed',
   'sortOrder', 'note', 'createdAt', 'updatedAt', 'deletedAt',
 ] as const
+
+const VALID_STATUSES = new Set(['planned', 'watching', 'waiting'])
 
 export type SheetCell = string | number | boolean | null | undefined
 
@@ -79,6 +81,10 @@ export function rowToRecord(row: SheetCell[], headers: string[]): WatchRecord | 
   const id = text(pick(row, headers, 'id')).trim()
   if (!id) return null
 
+  // 舊試算表沒有 status 欄，或值被手動改壞時一律視為未標記
+  const rawStatus = text(pick(row, headers, 'status')).trim()
+  const status = VALID_STATUSES.has(rawStatus) ? (rawStatus as WatchStatus) : null
+
   return {
     id,
     categoryId: text(pick(row, headers, 'categoryId')),
@@ -86,6 +92,7 @@ export function rowToRecord(row: SheetCell[], headers: string[]): WatchRecord | 
     season: num(pick(row, headers, 'season')),
     episode: num(pick(row, headers, 'episode')),
     watchTime: num(pick(row, headers, 'watchTime')),
+    status,
     completed: bool(pick(row, headers, 'completed')),
     sortOrder: num(pick(row, headers, 'sortOrder')),
     note: text(pick(row, headers, 'note')),

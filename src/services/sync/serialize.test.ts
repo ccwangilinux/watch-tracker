@@ -19,7 +19,7 @@ const CATEGORY: Category = {
 
 const RECORD: WatchRecord = {
   id: 'r1', categoryId: 'c1', title: '淚之女王', season: 2, episode: 14,
-  watchTime: 22533, completed: true, sortOrder: 0, note: '好看',
+  watchTime: 22533, status: null, completed: true, sortOrder: 0, note: '好看',
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-06-01T12:30:00.000Z',
   deletedAt: null,
@@ -71,6 +71,28 @@ describe('紀錄序列化', () => {
     const parsed = rowToRecord(row, headers)!
     expect(parsed.completed).toBe(true)
     expect(parsed.watchTime).toBe(22533)
+  })
+
+  it('狀態可往返，未標記時欄位留白', () => {
+    const withStatus = { ...RECORD, status: 'waiting' as const }
+    expect(rowToRecord(recordToRow(withStatus), [...RECORD_HEADERS])!.status).toBe('waiting')
+
+    const row = recordToRow(RECORD)
+    expect(row[RECORD_HEADERS.indexOf('status')]).toBe('')
+    expect(rowToRecord(row, [...RECORD_HEADERS])!.status).toBeNull()
+  })
+
+  it('舊試算表沒有 status 欄時視為未標記', () => {
+    // 這是跨版本同步的實際情況：另一台裝置還在跑舊版
+    const headers = [...RECORD_HEADERS].filter((h) => h !== 'status')
+    const row = headers.map((h) => (h === 'id' ? 'r1' : h === 'deletedAt' ? '' : 'x'))
+    expect(rowToRecord(row, headers)!.status).toBeNull()
+  })
+
+  it('status 欄被手動改成無效值時視為未標記', () => {
+    const headers = [...RECORD_HEADERS]
+    const row = headers.map((h) => (h === 'id' ? 'r1' : h === 'status' ? '亂打的' : ''))
+    expect(rowToRecord(row, headers)!.status).toBeNull()
   })
 
   it('ISO 時間戳原樣保留，不被當成日期轉換', () => {

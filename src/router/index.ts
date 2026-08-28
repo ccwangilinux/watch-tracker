@@ -33,6 +33,12 @@ const router = createRouter({
       props: true,
     },
     {
+      path: '/s/:status',
+      name: 'status-list',
+      component: () => import('@/views/StatusListView.vue'),
+      props: true,
+    },
+    {
       path: '/settings',
       name: 'settings',
       component: () => import('@/views/SettingsView.vue'),

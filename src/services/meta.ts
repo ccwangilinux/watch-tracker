@@ -11,6 +11,7 @@ export const META_KEYS = {
   lastSearchText: 'lastSearchText',
   lastSortKey: 'lastSortKey',
   lastSortDirection: 'lastSortDirection',
+  lastStatusFilter: 'lastStatusFilter',
   lastViewMode: 'lastViewMode',
   sheetId: 'sheetId',
   lastSyncedAt: 'lastSyncedAt',

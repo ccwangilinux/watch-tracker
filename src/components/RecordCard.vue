@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { formatWatchTime } from '@/utils/time'
 import { formatSeason } from '@/utils/season'
 import { useClipboard } from '@/composables/useClipboard'
+import { statusMeta } from '@/constants/status'
 import type { WatchRecord } from '@/types/models'
 
 /**
@@ -20,10 +21,13 @@ const props = defineProps<{
 
 const { copied, copy } = useClipboard()
 
+const status = computed(() => statusMeta(props.record.status))
 const hasSeason = computed(() => props.record.season > 1)
 const hasEpisode = computed(() => props.record.episode > 0)
 const hasTime = computed(() => props.record.watchTime > 0)
-const hasMeta = computed(() => hasSeason.value || hasEpisode.value || hasTime.value)
+const hasMeta = computed(
+  () => Boolean(status.value) || hasSeason.value || hasEpisode.value || hasTime.value,
+)
 
 function onCopy(event: Event) {
   // 卡片本身是進入編輯的按鈕，複製不該連帶觸發
@@ -44,6 +48,9 @@ function onCopy(event: Event) {
       </span>
 
       <span v-if="hasMeta" class="card__row card__row--meta">
+        <span v-if="status" class="tag tag--status" :style="{ '--tag-c': status.color }">
+          <span aria-hidden="true">{{ status.icon }}</span>{{ status.label }}
+        </span>
         <span v-if="hasSeason" class="tag tag--season">{{ formatSeason(record.season) }}</span>
         <span v-if="hasEpisode" class="tag tag--episode">第 {{ record.episode }} 集</span>
         <span v-if="hasTime" class="tag tag--time">{{ formatWatchTime(record.watchTime) }}</span>
@@ -129,6 +136,14 @@ function onCopy(event: Event) {
   /* 底色只用 12%：三個標籤並排時若太重，整列會比片名還搶眼 */
   background: color-mix(in srgb, var(--tag-c) 14%, transparent);
   color: var(--tag-c);
+}
+
+.tag--status {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  /* 狀態是主要的辨識依據，底色比其他標籤重一點 */
+  background: color-mix(in srgb, var(--tag-c) 20%, transparent);
 }
 
 .tag--season  { --tag-c: var(--season); }

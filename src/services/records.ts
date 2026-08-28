@@ -1,7 +1,8 @@
 import { db } from '@/db'
 import { uuid } from '@/utils/id'
 import { now } from '@/utils/time'
-import type { WatchRecord, SortKey, SortDirection } from '@/types/models'
+import type { WatchRecord, SortKey, SortDirection, WatchStatus } from '@/types/models'
+import { STATUS_LIST } from '@/constants/status'
 
 /** 紀錄資料存取。純資料層，不 import 任何 Vue/Pinia。 */
 
@@ -32,6 +33,8 @@ export interface RecordInput {
   season: number
   episode: number
   watchTime: number
+  /** null 代表尚未標記 */
+  status: WatchStatus | null
   completed: boolean
   note: string
 }
@@ -103,6 +106,10 @@ export function sortRecords(
       case 'watchTime':
         result = a.watchTime - b.watchTime
         break
+      case 'status':
+        // 依 STATUS_LIST 的順序排；未標記的排在最後
+        result = statusRank(a.status) - statusRank(b.status)
+        break
       case 'custom':
         result = a.sortOrder - b.sortOrder
         break
@@ -120,8 +127,33 @@ export function sortRecords(
   })
 }
 
+function statusRank(status: WatchStatus | null): number {
+  if (!status) return STATUS_LIST.length
+  return STATUS_LIST.findIndex((s) => s.key === status)
+}
+
+/** 各狀態的紀錄數，供首頁快速入口顯示 */
+export async function countByStatus(): Promise<Record<string, number>> {
+  const rows = await db.watchRecords.toArray()
+  const counts: Record<string, number> = { unset: 0 }
+
+  for (const record of rows) {
+    if (record.deletedAt !== null) continue
+    const key = record.status ?? 'unset'
+    counts[key] = (counts[key] ?? 0) + 1
+  }
+  return counts
+}
+
+/** 跨類別列出某個狀態的紀錄；status 為 null 時列出尚未標記的 */
+export async function listByStatus(status: WatchStatus | null): Promise<WatchRecord[]> {
+  const rows = await db.watchRecords.toArray()
+  return rows.filter((r) => r.deletedAt === null && (r.status ?? null) === status)
+}
+
 export const SORT_OPTIONS: { key: SortKey; label: string; defaultDirection: SortDirection }[] = [
   { key: 'updatedAt', label: '最後修改時間', defaultDirection: 'desc' },
+  { key: 'status', label: '觀看狀態', defaultDirection: 'asc' },
   { key: 'title', label: '片名', defaultDirection: 'asc' },
   { key: 'season', label: '季數', defaultDirection: 'asc' },
   { key: 'episode', label: '集數', defaultDirection: 'desc' },
