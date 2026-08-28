@@ -37,7 +37,10 @@ jobs:
           # OAuth Client ID 設計上就是公開值（會出現在前端 bundle 中），
           # 因此用 repository variable 而非 secret。未設定時雲端功能會自動停用，
           # 但 App 的本機功能與 JSON 備份不受影響。
-          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+          # 沒設 repository variable 時用這個預設值。
+          # Client ID 設計上就是公開值，會直接出現在前端 bundle 中，
+          # 寫在這裡不會增加任何暴露；真正機密的 Client Secret 本專案完全不使用。
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID || '697258364981-hk9q891v23buts4v1ut0mfgioebe31qq.apps.googleusercontent.com' }}
 
       # 前提：repo 的 Settings → Pages → Source 必須先手動設為 GitHub Actions。
       # 這裡不用 enablement: true 自動建站，GITHUB_TOKEN 的權限不足以代為建立。
