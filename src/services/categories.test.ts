@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { db } from '@/db'
-import { seedIfEmpty } from '@/db/seed'
+import { seedIfNeeded, markSeeded } from '@/db/seed'
 import {
   listCategories,
   createCategory,
@@ -19,9 +19,9 @@ beforeEach(async () => {
   await db.meta.clear()
 })
 
-describe('seedIfEmpty', () => {
+describe('seedIfNeeded', () => {
   it('空資料庫時寫入預設類別並保持順序', async () => {
-    expect(await seedIfEmpty()).toBe(true)
+    expect(await seedIfNeeded()).toBe(true)
 
     const list = await listCategories()
     expect(list).toHaveLength(DEFAULT_CATEGORIES.length)
@@ -30,9 +30,25 @@ describe('seedIfEmpty', () => {
   })
 
   it('已有資料時不重複寫入', async () => {
-    await seedIfEmpty()
-    expect(await seedIfEmpty()).toBe(false)
+    await seedIfNeeded()
+    expect(await seedIfNeeded()).toBe(false)
     expect(await db.categories.count()).toBe(DEFAULT_CATEGORIES.length)
+  })
+
+  it('標記過之後不再寫入預設類別', async () => {
+    // 使用者主動清除全部資料的情境：清空後不該又冒出預設類別
+    await markSeeded()
+    expect(await seedIfNeeded()).toBe(false)
+    expect(await db.categories.count()).toBe(0)
+  })
+
+  it('資料來自匯入時補記旗標，下次啟動不再寫入預設類別', async () => {
+    await createCategory({ name: '匯入來的', icon: '🎬', color: '#fff' })
+    expect(await seedIfNeeded()).toBe(false)
+
+    await db.categories.clear()
+    expect(await seedIfNeeded()).toBe(false)
+    expect(await db.categories.count()).toBe(0)
   })
 })
 

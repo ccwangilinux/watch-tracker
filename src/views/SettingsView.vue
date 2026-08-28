@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -11,6 +11,8 @@ import { useRecordStore } from '@/stores/records'
 import { SORT_OPTIONS } from '@/services/records'
 import { formatRelative } from '@/utils/datetime'
 import { db } from '@/db'
+import { useClipboard } from '@/composables/useClipboard'
+import { markSeeded } from '@/db/seed'
 
 const router = useRouter()
 const cloud = useCloudStore()
@@ -18,6 +20,30 @@ const { sortKey, sortDirection } = storeToRefs(useUiStore())
 
 const sortOpen = ref(false)
 const confirmClear = ref(false)
+
+const { copied, copy } = useClipboard(2000)
+
+/**
+ * App 網址由執行環境組出，不寫死。
+ * BASE_URL 在 GitHub Pages 上是 /watch-tracker/，本機 dev 也一致，
+ * 寫死的話換 repo 名稱或改用自訂網域就會分享出錯誤的連結。
+ */
+const appUrl = computed(() => new URL(import.meta.env.BASE_URL, location.origin).href)
+
+// Web Share API 只在部分瀏覽器可用；iOS Safari 支援，桌面 Firefox 不支援
+const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
+
+async function shareApp() {
+  try {
+    await navigator.share({
+      title: '我的觀看紀錄',
+      text: '追劇不忘，記錄精彩時刻',
+      url: appUrl.value,
+    })
+  } catch {
+    // 使用者取消分享會拋出例外，這不是錯誤，不需處理
+  }
+}
 
 onMounted(() => cloud.restore())
 
@@ -28,7 +54,10 @@ function sortLabel(): string {
 
 /**
  * 清除全部資料（規格第 26 節要求二次確認）。
- * 連同 meta 一起清空，讓 App 回到全新安裝的狀態並重新寫入預設類別。
+ *
+ * 清完後標記為已初始化，不再寫回預設類別——使用者主動清空，
+ * 就不該又冒出十個沒要過的類別，那在接著從雲端同步時還會與
+ * 自己的類別並存。要恢復預設類別可以自行新增或匯入備份。
  */
 async function clearAll() {
   await db.transaction('rw', db.categories, db.watchRecords, db.meta, async () => {
@@ -36,6 +65,7 @@ async function clearAll() {
     await db.watchRecords.clear()
     await db.meta.clear()
   })
+  await markSeeded()
 
   const categoryStore = useCategoryStore()
   categoryStore.ready = false
@@ -103,12 +133,33 @@ async function clearAll() {
   </section>
 
   <section class="group">
+    <h2 class="group__title">分享</h2>
+
+    <button v-if="canShare" class="row" type="button" @click="shareApp">
+      <span>分享這個 App</span>
+      <span class="row__value">›</span>
+    </button>
+
+    <button class="row" type="button" @click="copy(appUrl)">
+      <span>{{ copied ? '已複製連結' : '複製 App 連結' }}</span>
+      <span class="row__value" :class="{ 'is-copied': copied }">
+        {{ copied ? '✓' : '⧉' }}
+      </span>
+    </button>
+
+    <p class="hint url">{{ appUrl }}</p>
+  </section>
+
+  <section class="group">
     <h2 class="group__title">關於</h2>
     <div class="row row--static">
       <span>我的觀看紀錄</span>
       <span class="row__value">Watch Tracker</span>
     </div>
-    <p class="hint">追劇不忘，記錄精彩時刻</p>
+    <p class="hint">
+      追劇不忘，記錄精彩時刻。資料存在你自己的裝置上，
+      連結 Google 後才會備份到你自己的私人試算表。
+    </p>
   </section>
 
   <SortSheet v-model="sortOpen" v-model:sort-key="sortKey" v-model:sort-direction="sortDirection" />
@@ -166,4 +217,11 @@ async function clearAll() {
 }
 
 .hint { font-size: 12px; line-height: 1.6; color: var(--text-faint); padding: 0 var(--sp-1); }
+
+.url {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  word-break: break-all;
+}
+
+.row__value.is-copied { color: var(--success); font-weight: 700; }
 </style>

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import * as service from '@/services/categories'
-import { seedIfEmpty } from '@/db/seed'
+import { seedIfNeeded } from '@/db/seed'
 import type { Category } from '@/types/models'
 import type { CategoryInput } from '@/services/categories'
 
@@ -24,7 +24,7 @@ export const useCategoryStore = defineStore('categories', () => {
   /** App 啟動時呼叫一次：建 DB、必要時寫入預設類別、載入列表 */
   async function init() {
     if (ready.value) return
-    await seedIfEmpty()
+    await seedIfNeeded()
     await load()
     ready.value = true
   }

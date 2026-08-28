@@ -14,6 +14,7 @@ export const META_KEYS = {
   lastViewMode: 'lastViewMode',
   sheetId: 'sheetId',
   lastSyncedAt: 'lastSyncedAt',
+  seeded: 'seeded',
 } as const
 
 export async function getMeta<T>(key: string): Promise<T | undefined> {
