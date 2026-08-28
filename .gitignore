@@ -12,3 +12,8 @@ dist-ssr/
 # 開發參考資料：規格 PDF 與設計稿。設計稿含個人信箱，且 repo 為 Public，故不進版控
 docs/
 *.tsbuildinfo
+
+# 個人觀看資料：原始文字紀錄與轉換後的備份檔，絕不可進入 Public repo
+wt.txt
+*-backup.json
+watch-tracker-*.json
