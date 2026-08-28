@@ -174,6 +174,15 @@ async function doImport() {
         {{ cloud.state === 'syncing' ? '同步中…' : '立即同步' }}
       </button>
       <button class="btn" type="button" :disabled="cloud.state === 'syncing'"
+        @click="startLink">
+        更換連結的試算表
+      </button>
+      <p class="hint">
+        多台裝置必須連到<strong>同一份</strong>試算表才會互相同步。
+        比對上方的檔案 ID，若與其他裝置不同，用這個切換過去。
+      </p>
+
+      <button class="btn" type="button" :disabled="cloud.state === 'syncing'"
         @click="confirmOverwrite = true">
         以本機資料覆蓋雲端
       </button>
@@ -221,9 +230,20 @@ async function doImport() {
 
     <ul class="files">
       <li v-for="file in cloud.available" :key="file.id">
-        <button class="file" type="button" @click="chooseExisting(file)">
-          <span class="file__name">{{ file.name }}</span>
-          <span class="file__time">建立於 {{ formatDateTime(file.createdTime ?? null) }}</span>
+        <button
+          class="file"
+          :class="{ 'is-current': file.id === cloud.sheetId }"
+          type="button"
+          @click="chooseExisting(file)"
+        >
+          <span class="file__name">
+            {{ file.name }}
+            <span v-if="file.id === cloud.sheetId" class="file__badge">目前連結中</span>
+          </span>
+          <span class="file__time">
+            建立於 {{ formatDateTime(file.createdTime ?? null) }}
+          </span>
+          <span class="file__id">{{ file.id }}</span>
         </button>
       </li>
     </ul>
@@ -365,8 +385,29 @@ async function doImport() {
 }
 
 .file:active { border-color: var(--accent); background: var(--accent-soft); }
-.file__name { font-weight: 600; }
+.file.is-current { border-color: var(--accent); background: var(--accent-soft); }
+
+.file__name { font-weight: 600; display: flex; align-items: center; gap: var(--sp-2); }
+
+.file__badge {
+  padding: 1px var(--sp-2);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  border-radius: var(--r-full);
+}
+
 .file__time { font-size: 12px; color: var(--text-faint); }
+
+.file__id {
+  font-size: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .hidden-input { display: none; }
 </style>
