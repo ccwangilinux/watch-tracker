@@ -12,6 +12,7 @@ import { SORT_OPTIONS } from '@/services/records'
 import { formatRelative, formatDateTime } from '@/utils/datetime'
 import { db } from '@/db'
 import { useClipboard } from '@/composables/useClipboard'
+import { usePwaUpdate } from '@/composables/usePwaUpdate'
 import { markSeeded } from '@/db/seed'
 
 const router = useRouter()
@@ -32,6 +33,20 @@ const appUrl = computed(() => new URL(import.meta.env.BASE_URL, location.origin)
 
 /** 建置時間：用來確認這台裝置跑的是不是最新版 */
 const buildTime = formatDateTime(__BUILD_TIME__)
+
+const { needRefresh, checking, checkForUpdate, applyUpdate } = usePwaUpdate()
+const updateMessage = ref('')
+
+async function onCheckUpdate() {
+  updateMessage.value = ''
+  const result = await checkForUpdate()
+  updateMessage.value = {
+    found: '有新版本，按下方按鈕套用',
+    latest: '目前已是最新版本',
+    unavailable: '此環境沒有 Service Worker（開發模式或瀏覽器不支援）',
+    failed: '檢查失敗，請確認網路連線',
+  }[result]
+}
 
 // Web Share API 只在部分瀏覽器可用；iOS Safari 支援，桌面 Firefox 不支援
 const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
@@ -167,6 +182,22 @@ async function clearAll() {
       <span>版本</span>
       <span class="row__value">{{ buildTime }}</span>
     </div>
+
+    <button class="row" type="button" :disabled="checking" @click="onCheckUpdate">
+      <span>{{ checking ? '檢查中…' : '檢查更新' }}</span>
+      <span class="row__value">›</span>
+    </button>
+
+    <button v-if="needRefresh" class="row row--accent" type="button" @click="applyUpdate">
+      <span>套用新版本並重新載入</span>
+      <span class="row__value">›</span>
+    </button>
+
+    <p v-if="updateMessage" class="hint">{{ updateMessage }}</p>
+    <p class="hint">
+      從主畫面啟動的 PWA 不一定會自動檢查新版，
+      覺得功能沒更新時可以用這裡手動確認。
+    </p>
     <p class="hint">
       追劇不忘，記錄精彩時刻。資料存在你自己的裝置上，
       連結 Google 後才會備份到你自己的私人試算表。
@@ -219,6 +250,14 @@ async function clearAll() {
 
 .row--static { cursor: default; }
 .row--danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
+
+.row--accent {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: var(--accent-soft);
+}
+
+.row:disabled { opacity: 0.55; }
 
 .row__value {
   flex: 0 0 auto;

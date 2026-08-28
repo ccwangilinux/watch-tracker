@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useRegisterSW } from 'virtual:pwa-register/vue'
 import { useOnline } from '@/composables/useOnline'
+import { usePwaUpdate } from '@/composables/usePwaUpdate'
 
 /**
  * 兩種狀態共用一條底部提示：
@@ -8,11 +8,7 @@ import { useOnline } from '@/composables/useOnline'
  *   有新版 — 由使用者按下才套用，不在使用中偷偷換版
  */
 const { online } = useOnline()
-const { needRefresh, updateServiceWorker } = useRegisterSW()
-
-function applyUpdate() {
-  updateServiceWorker(true)
-}
+const { needRefresh, applyUpdate } = usePwaUpdate()
 </script>
 
 <template>
