@@ -8,7 +8,13 @@ import type { WatchRecord } from '@/types/models'
  * 一筆紀錄一張卡片（規格第 11 節），不使用桌面型表格。
  * 刻意不放任何圖片：列表與內容都不顯示劇照或海報。
  */
-const props = defineProps<{ record: WatchRecord }>()
+const props = defineProps<{
+  record: WatchRecord
+  /** 跨類別搜尋結果中才需要顯示所屬類別 */
+  categoryName?: string
+  categoryIcon?: string
+  categoryColor?: string
+}>()
 
 const meta = computed(
   () => `${formatSeason(props.record.season)} • 第 ${props.record.episode} 集`,
@@ -17,6 +23,10 @@ const meta = computed(
 
 <template>
   <button class="card" :class="{ 'is-done': record.completed }" type="button">
+    <span v-if="categoryName" class="card__cat" :style="{ '--c': categoryColor }">
+      <span aria-hidden="true">{{ categoryIcon }}</span>{{ categoryName }}
+    </span>
+
     <div class="card__head">
       <h3 class="card__title">{{ record.title }}</h3>
       <span v-if="record.completed" class="card__badge">✓ 已完結</span>
@@ -50,6 +60,19 @@ const meta = computed(
 /* 已完結要有醒目標記（規格第 14 節） */
 .card.is-done {
   border-color: color-mix(in srgb, var(--success) 40%, transparent);
+}
+
+.card__cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: var(--sp-2);
+  padding: 2px var(--sp-2);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--r-full);
+  color: var(--c, var(--text-dim));
+  background: color-mix(in srgb, var(--c, var(--text-faint)) 15%, transparent);
 }
 
 .card__head {

@@ -1,22 +1,56 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import CategoryCard from '@/components/CategoryCard.vue'
+import RecordCard from '@/components/RecordCard.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { useCategoryStore } from '@/stores/categories'
 import { useUiStore } from '@/stores/ui'
+import { searchAll, sortRecords } from '@/services/records'
+import type { WatchRecord } from '@/types/models'
 
 const router = useRouter()
 const store = useCategoryStore()
-const { searchText, lastCategoryId } = storeToRefs(useUiStore())
+const { searchText, lastCategoryId, sortKey, sortDirection } = storeToRefs(useUiStore())
 
-// Header 的搜尋框在首頁用來篩選類別；進入類別後才是搜尋紀錄
-const visible = computed(() => {
-  const keyword = searchText.value.trim().toLowerCase()
-  if (!keyword) return store.items
-  return store.items.filter((c) => c.name.toLowerCase().includes(keyword))
+const keyword = computed(() => searchText.value.trim())
+const searching = computed(() => keyword.value.length > 0)
+
+/** 搜尋時同時篩類別名稱，讓「找分類」和「找片名」兩種意圖都能命中 */
+const matchedCategories = computed(() => {
+  if (!searching.value) return store.items
+  const lower = keyword.value.toLowerCase()
+  return store.items.filter((c) => c.name.toLowerCase().includes(lower))
 })
+
+// Header 搜尋的主要用途是查觀看紀錄（規格第 10 節），跨類別比對片名
+const matchedRecords = ref<WatchRecord[]>([])
+const searchingRecords = ref(false)
+
+watch(keyword, async (value) => {
+  if (!value) {
+    matchedRecords.value = []
+    return
+  }
+  searchingRecords.value = true
+  const hits = await searchAll(value)
+  matchedRecords.value = sortRecords(hits, sortKey.value, sortDirection.value)
+  searchingRecords.value = false
+}, { immediate: true })
+
+// 資料變動（同步、匯入）後要重跑搜尋，否則結果會停在舊資料
+watch(() => store.items, async () => {
+  if (keyword.value) matchedRecords.value = await searchAll(keyword.value)
+})
+
+const nothingFound = computed(
+  () => searching.value && matchedRecords.value.length === 0 && matchedCategories.value.length === 0,
+)
+
+function categoryOf(id: string) {
+  return store.items.find((c) => c.id === id)
+}
 
 function openCategory(id: string) {
   lastCategoryId.value = id
@@ -25,59 +59,84 @@ function openCategory(id: string) {
 </script>
 
 <template>
-  <section class="section">
+  <section v-if="!searching" class="section">
     <h1 class="brand">
       我的觀看紀錄
       <small class="brand__sub">追劇不忘，記錄精彩時刻</small>
     </h1>
   </section>
 
-  <section class="section">
-    <h2 class="section__title">觀看類別</h2>
+  <p v-if="store.loading" class="loading">載入中…</p>
 
-    <p v-if="store.loading" class="loading">載入中…</p>
-
+  <template v-else>
     <EmptyState
-      v-else-if="visible.length === 0 && searchText"
+      v-if="nothingFound && !searchingRecords"
       icon="🔍"
-      title="找不到符合的類別"
-      :message="`沒有名稱包含「${searchText}」的類別`"
+      title="找不到符合的內容"
+      :message="`沒有片名或類別包含「${keyword}」的項目`"
     />
 
+    <!-- 搜尋結果：紀錄優先，因為 Header 搜尋的主要用途是查片名 -->
+    <section v-if="searching && matchedRecords.length > 0" class="section">
+      <h2 class="section__title">觀看紀錄 · {{ matchedRecords.length }}</h2>
+      <ul class="records">
+        <li v-for="record in matchedRecords" :key="record.id">
+          <RecordCard
+            :record="record"
+            :category-name="categoryOf(record.categoryId)?.name"
+            :category-icon="categoryOf(record.categoryId)?.icon"
+            :category-color="categoryOf(record.categoryId)?.color"
+            @click="router.push(`/r/${record.id}`)"
+          />
+        </li>
+      </ul>
+    </section>
+
+    <section v-if="matchedCategories.length > 0" class="section">
+      <h2 class="section__title">
+        {{ searching ? `觀看類別 · ${matchedCategories.length}` : '觀看類別' }}
+      </h2>
+      <ul class="cats">
+        <li v-for="cat in matchedCategories" :key="cat.id">
+          <CategoryCard
+            :name="cat.name"
+            :icon="cat.icon"
+            :color="cat.color"
+            :count="store.countOf(cat.id)"
+            @click="openCategory(cat.id)"
+          />
+        </li>
+      </ul>
+    </section>
+
     <EmptyState
-      v-else-if="visible.length === 0"
+      v-else-if="!searching"
       icon="📂"
       title="還沒有任何類別"
       message="新增第一個類別，開始記錄你的觀看進度"
     />
 
-    <ul v-else class="cats">
-      <li v-for="cat in visible" :key="cat.id">
-        <CategoryCard
-          :name="cat.name"
-          :icon="cat.icon"
-          :color="cat.color"
-          :count="store.countOf(cat.id)"
-          @click="openCategory(cat.id)"
-        />
-      </li>
-    </ul>
-  </section>
+    <template v-if="!searching">
+      <section class="section">
+        <button
+          class="action action--primary"
+          type="button"
+          @click="router.push('/settings/categories')"
+        >
+          <span aria-hidden="true">＋</span> 新增 / 管理類別
+        </button>
+      </section>
 
-  <section class="section">
-    <button class="action action--primary" type="button" @click="router.push('/settings/categories')">
-      <span aria-hidden="true">＋</span> 新增 / 管理類別
-    </button>
-  </section>
-
-  <section class="section actions">
-    <button class="action" type="button" @click="router.push('/settings')">
-      <span aria-hidden="true">⚙</span> 設定
-    </button>
-    <button class="action" type="button" @click="router.push('/settings/cloud')">
-      <span aria-hidden="true">☁</span> 雲端同步
-    </button>
-  </section>
+      <section class="section actions">
+        <button class="action" type="button" @click="router.push('/settings')">
+          <span aria-hidden="true">⚙</span> 設定
+        </button>
+        <button class="action" type="button" @click="router.push('/settings/cloud')">
+          <span aria-hidden="true">☁</span> 雲端同步
+        </button>
+      </section>
+    </template>
+  </template>
 </template>
 
 <style scoped>
@@ -105,6 +164,7 @@ function openCategory(id: string) {
 .loading { color: var(--text-faint); font-size: 14px; }
 
 .cats { display: flex; flex-direction: column; gap: var(--sp-2); }
+.records { display: flex; flex-direction: column; gap: var(--sp-3); }
 
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
 
