@@ -9,7 +9,7 @@ import { useCloudStore } from '@/stores/cloud'
 import { useCategoryStore } from '@/stores/categories'
 import { useRecordStore } from '@/stores/records'
 import { SORT_OPTIONS } from '@/services/records'
-import { formatRelative, formatDateTime } from '@/utils/datetime'
+import { formatRelative, formatDate } from '@/utils/datetime'
 import { db } from '@/db'
 import { useClipboard } from '@/composables/useClipboard'
 import { usePwaUpdate } from '@/composables/usePwaUpdate'
@@ -31,8 +31,8 @@ const { copied, copy } = useClipboard(2000)
  */
 const appUrl = computed(() => new URL(import.meta.env.BASE_URL, location.origin).href)
 
-/** 建置時間：用來確認這台裝置跑的是不是最新版 */
-const buildTime = formatDateTime(__BUILD_TIME__)
+/** 建置日期。要精確確認是否為最新版請用下方的「檢查更新」 */
+const buildTime = formatDate(__BUILD_TIME__)
 
 const { needRefresh, checking, checkForUpdate, applyUpdate } = usePwaUpdate()
 const updateMessage = ref('')

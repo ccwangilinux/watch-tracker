@@ -11,6 +11,18 @@ export function formatDateTime(iso: string | null): string {
   }).format(date)
 }
 
+/** 只要日期，不含時間 */
+export function formatDate(iso: string | null): string {
+  if (!iso) return '—'
+
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return '—'
+
+  return new Intl.DateTimeFormat('zh-TW', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(date)
+}
+
 /** 相對時間：剛剛 / 5 分鐘前 / 3 小時前 / 2 天前 */
 export function formatRelative(iso: string | null): string {
   if (!iso) return '尚未同步'
