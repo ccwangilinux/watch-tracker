@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import AppHeader from '@/components/AppHeader.vue'
+import PwaBanner from '@/components/PwaBanner.vue'
 import { useCategoryStore } from '@/stores/categories'
 import { useUiStore } from '@/stores/ui'
 
@@ -20,6 +21,7 @@ onMounted(async () => {
       <component :is="Component" />
     </RouterView>
   </main>
+  <PwaBanner />
 </template>
 
 <style scoped>

@@ -13,10 +13,36 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="觀看紀錄" />
 
+    <!-- iOS 不讀 manifest 的 icons，必須另外指定 apple-touch-icon -->
+    <link rel="apple-touch-icon" href="/watch-tracker/icons/icon-180.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/watch-tracker/icons/favicon-32.png" />
+
     <title>我的觀看紀錄</title>
+
+    <!--
+      關鍵樣式內聯：外部 CSS 載入前若沒有底色，iOS standalone 啟動會先閃一下白畫面。
+      iOS 不支援 manifest 的 splash，只能靠這個 + 下方的骨架來遮蓋啟動空窗。
+    -->
+    <style>
+      html, body { margin: 0; background: #0b0e1a; color: #eef1fb; }
+      .boot {
+        position: fixed; inset: 0;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 14px;
+        font-family: -apple-system, BlinkMacSystemFont, 'PingFang TC', sans-serif;
+      }
+      .boot img { width: 88px; height: 88px; border-radius: 20px; }
+      .boot span { font-size: 14px; color: #646d92; letter-spacing: 0.05em; }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <!-- Vue 掛載後會整段取代掉 -->
+      <div class="boot">
+        <img src="/watch-tracker/icons/icon-192.png" alt="" />
+        <span>我的觀看紀錄</span>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
