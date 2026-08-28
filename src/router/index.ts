@@ -52,7 +52,36 @@ const router = createRouter({
     },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
-  scrollBehavior: (_to, _from, saved) => saved ?? { top: 0 },
+  /**
+   * 回到列表時還原捲動位置。
+   *
+   * 不能直接回傳 savedPosition：列表資料是從 IndexedDB 非同步載入的，
+   * 此刻頁面高度還不足以捲到原來的位置，瀏覽器會把它夾成能捲到的最大值。
+   * 因此等頁面長到足夠高度再還原，最多等 800ms 以免卡住轉場。
+   */
+  scrollBehavior: async (_to, _from, saved) => {
+    if (!saved) return { top: 0 }
+    await waitForScrollHeight(saved.top, 800)
+    return saved
+  },
 })
+
+/** 等到文件高度足以捲到 target，或逾時 */
+function waitForScrollHeight(target: number, timeout: number): Promise<void> {
+  return new Promise((resolve) => {
+    const deadline = performance.now() + timeout
+
+    const check = () => {
+      const reachable = document.documentElement.scrollHeight - window.innerHeight
+      if (reachable >= target || performance.now() > deadline) {
+        resolve()
+        return
+      }
+      requestAnimationFrame(check)
+    }
+
+    requestAnimationFrame(check)
+  })
+}
 
 export default router

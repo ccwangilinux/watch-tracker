@@ -20,14 +20,10 @@ const props = defineProps<{
 
 const { copied, copy } = useClipboard()
 
-const meta = computed(() => {
-  const parts: string[] = []
-  if (props.record.season > 1) parts.push(formatSeason(props.record.season))
-  if (props.record.episode > 0) parts.push(`第 ${props.record.episode} 集`)
-  return parts.join(' · ')
-})
-
+const hasSeason = computed(() => props.record.season > 1)
+const hasEpisode = computed(() => props.record.episode > 0)
 const hasTime = computed(() => props.record.watchTime > 0)
+const hasMeta = computed(() => hasSeason.value || hasEpisode.value || hasTime.value)
 
 function onCopy(event: Event) {
   // 卡片本身是進入編輯的按鈕，複製不該連帶觸發
@@ -47,9 +43,10 @@ function onCopy(event: Event) {
         <span v-if="record.completed" class="card__done" aria-label="已完結">✓</span>
       </span>
 
-      <span v-if="meta || hasTime" class="card__row card__row--meta">
-        <span v-if="meta" class="card__meta">{{ meta }}</span>
-        <span v-if="hasTime" class="card__time">{{ formatWatchTime(record.watchTime) }}</span>
+      <span v-if="hasMeta" class="card__row card__row--meta">
+        <span v-if="hasSeason" class="tag tag--season">{{ formatSeason(record.season) }}</span>
+        <span v-if="hasEpisode" class="tag tag--episode">第 {{ record.episode }} 集</span>
+        <span v-if="hasTime" class="tag tag--time">{{ formatWatchTime(record.watchTime) }}</span>
       </span>
     </button>
 
@@ -115,20 +112,28 @@ function onCopy(event: Event) {
   color: var(--success);
 }
 
-.card__row--meta { gap: var(--sp-3); align-items: baseline; }
-
-.card__meta {
-  font-size: 12px;
-  color: var(--text-dim);
-  white-space: nowrap;
+.card__row--meta {
+  gap: var(--sp-2);
+  align-items: baseline;
+  flex-wrap: wrap;
+  margin-top: 2px;
 }
 
-.card__time {
+.tag {
   font-size: 12px;
-  color: var(--text-faint);
-  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  line-height: 1.5;
   white-space: nowrap;
+  padding: 0 6px;
+  border-radius: var(--r-sm);
+  /* 底色只用 12%：三個標籤並排時若太重，整列會比片名還搶眼 */
+  background: color-mix(in srgb, var(--tag-c) 14%, transparent);
+  color: var(--tag-c);
 }
+
+.tag--season  { --tag-c: var(--season); }
+.tag--episode { --tag-c: var(--episode); }
+.tag--time    { --tag-c: var(--watched); font-variant-numeric: tabular-nums; }
 
 /* 觸控區維持 44px 寬，但視覺上不搶版面 */
 .card__copy {

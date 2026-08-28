@@ -26,6 +26,11 @@
   --accent-2:      #ff4fa3;
   --gradient:      linear-gradient(135deg, #7c5cff 0%, #ff4fa3 100%);
 
+  /* 紀錄欄位：季 / 集 / 觀看時間各自可辨識的顏色 */
+  --season:  #c4a5ff;
+  --episode: #5ad1ee;
+  --watched: #ffc457;
+
   /* 語意 */
   --success:  #2dd4a7;
   --warning:  #ffb020;

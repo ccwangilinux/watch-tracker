@@ -58,6 +58,18 @@ onMounted(async () => {
   loaded.value = true
 })
 
+/**
+ * 離開編輯頁。
+ *
+ * 用 back 而不是 push：push 會建立新的歷史紀錄，
+ * 瀏覽器就沒有 savedPosition 可還原，回到列表時會跳回最頂端。
+ * 直接開啟網址進來（沒有上一頁）時才退回 fallback。
+ */
+function leave(fallback: string) {
+  if (window.history.state?.back) router.back()
+  else router.replace(fallback)
+}
+
 async function save() {
   if (!canSave.value) return
 
@@ -74,20 +86,20 @@ async function save() {
   if (props.recordId) await recordStore.update(props.recordId, payload)
   else await recordStore.create(payload)
 
-  router.push(`/c/${resolvedCategoryId.value}`)
+  leave(`/c/${resolvedCategoryId.value}`)
 }
 
 async function doDelete() {
   if (!props.recordId) return
   const backTo = resolvedCategoryId.value
   await recordStore.remove(props.recordId)
-  router.push(`/c/${backTo}`)
+  leave(`/c/${backTo}`)
 }
 </script>
 
 <template>
   <header class="head">
-    <button class="back" type="button" @click="router.back()">‹ 取消</button>
+    <button class="back" type="button" @click="leave('/')">‹ 取消</button>
     <h1 class="head__title">{{ isEdit ? '修改紀錄' : '新增紀錄' }}</h1>
   </header>
 
@@ -107,7 +119,7 @@ async function doDelete() {
       />
     </label>
 
-    <div class="field">
+    <div class="field field--episode">
       <span class="field__label">第幾集</span>
       <Stepper v-model="episode" :min="0" :max="9999" />
     </div>
@@ -115,7 +127,7 @@ async function doDelete() {
     <div class="field">
       <span class="field__label">第幾季</span>
       <button class="picker" type="button" @click="seasonSheet = true">
-        <span class="picker__value">{{ formatSeason(season) }}</span>
+        <span class="picker__value picker__value--season">{{ formatSeason(season) }}</span>
         <span class="picker__hint">選擇 ›</span>
       </button>
     </div>
@@ -243,7 +255,16 @@ async function doDelete() {
 }
 
 .picker__value { font-size: 17px; font-weight: 600; }
-.picker__value--time { font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+
+/* 與列表上的標籤同色，兩處才對得起來 */
+.picker__value--season { color: var(--season); }
+.picker__value--time {
+  color: var(--watched);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.field--episode :deep(.stepper__input) { color: var(--episode); }
 .picker__hint { font-size: 13px; color: var(--text-faint); }
 
 .actions { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-2); }
