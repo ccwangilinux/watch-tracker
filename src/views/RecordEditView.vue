@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import AutoTextarea from '@/components/AutoTextarea.vue'
 import Stepper from '@/components/Stepper.vue'
 import ToggleSwitch from '@/components/ToggleSwitch.vue'
 import SeasonPicker from '@/components/SeasonPicker.vue'
@@ -98,14 +99,11 @@ async function doDelete() {
   <form v-if="loaded" class="form" @submit.prevent="save">
     <label class="field">
       <span class="field__label">片名 <em>必填</em></span>
-      <input
+      <AutoTextarea
         v-model="title"
-        class="field__input"
-        type="text"
-        maxlength="100"
+        :maxlength="200"
         placeholder="例如：淚之女王"
-        enterkeyhint="done"
-        autocomplete="off"
+        @submit="save"
       />
     </label>
 

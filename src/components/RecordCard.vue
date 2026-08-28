@@ -90,12 +90,12 @@ function onCopy(event: Event) {
 
 .card__row {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   gap: var(--sp-2);
   min-width: 0;
 }
 
-.card__cat { flex: 0 0 auto; font-size: 12px; }
+.card__cat { flex: 0 0 auto; font-size: 12px; line-height: 1.6; }
 
 .card__title {
   flex: 1 1 auto;
@@ -103,22 +103,19 @@ function onCopy(event: Event) {
   font-size: 14px;
   font-weight: 600;
   line-height: 1.4;
-  /* 長片名截斷成兩行，避免單筆佔掉半個畫面 */
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
+  /* 片名完整顯示不截斷：資料裡有超過 50 字的片名，截掉就認不出是哪一部 */
+  overflow-wrap: anywhere;
 }
 
 .card__done {
   flex: 0 0 auto;
   font-size: 12px;
   font-weight: 700;
+  line-height: 1.6;
   color: var(--success);
 }
 
-.card__row--meta { gap: var(--sp-3); }
+.card__row--meta { gap: var(--sp-3); align-items: baseline; }
 
 .card__meta {
   font-size: 12px;
@@ -137,8 +134,10 @@ function onCopy(event: Event) {
 .card__copy {
   flex: 0 0 auto;
   width: var(--touch);
+  align-self: stretch;
   display: grid;
-  place-items: center;
+  place-items: start center;
+  padding-top: 10px;
   font-size: 15px;
   color: var(--text-faint);
   border-radius: 0 var(--r-md) var(--r-md) 0;
