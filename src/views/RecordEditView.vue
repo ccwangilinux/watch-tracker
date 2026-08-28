@@ -12,6 +12,7 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useRecordStore } from '@/stores/records'
 import { useCategoryStore } from '@/stores/categories'
 import { formatWatchTime } from '@/utils/time'
+import { formatDateTime } from '@/utils/datetime'
 import { formatSeason } from '@/utils/season'
 import type { WatchStatus } from '@/types/models'
 
@@ -36,6 +37,9 @@ const seasonSheet = ref(false)
 const timeSheet = ref(false)
 const confirmDelete = ref(false)
 const loaded = ref(false)
+// 同步問題多半要靠兩台裝置比對這個值才查得出來
+const updatedAt = ref<string | null>(null)
+const createdAt = ref<string | null>(null)
 
 const canSave = computed(() => title.value.trim().length > 0 && resolvedCategoryId.value !== '')
 const category = computed(() =>
@@ -58,6 +62,8 @@ onMounted(async () => {
     completed.value = record.completed
     note.value = record.note
     resolvedCategoryId.value = record.categoryId
+    updatedAt.value = record.updatedAt
+    createdAt.value = record.createdAt
   }
   loaded.value = true
 })
@@ -166,6 +172,11 @@ async function doDelete() {
         placeholder="選填"
       />
     </label>
+
+    <dl v-if="isEdit" class="stamps">
+      <div><dt>最後修改</dt><dd>{{ formatDateTime(updatedAt) }}</dd></div>
+      <div><dt>建立時間</dt><dd>{{ formatDateTime(createdAt) }}</dd></div>
+    </dl>
 
     <div class="actions">
       <button class="btn btn--primary" type="submit" :disabled="!canSave">
@@ -280,6 +291,20 @@ async function doDelete() {
 
 .field--episode :deep(.stepper__input) { color: var(--episode); }
 .picker__hint { font-size: 13px; color: var(--text-faint); }
+
+.stamps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-3);
+  background: var(--surface);
+  border-radius: var(--r-md);
+  font-size: 12px;
+}
+
+.stamps > div { display: flex; justify-content: space-between; gap: var(--sp-3); }
+.stamps dt { color: var(--text-faint); }
+.stamps dd { margin: 0; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 
 .actions { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-2); }
 

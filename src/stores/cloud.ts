@@ -6,7 +6,7 @@ import {
   createSpreadsheet, getSpreadsheetTitle, listAppSpreadsheets, AuthExpiredError,
 } from '@/services/google/sheets'
 import type { DriveFile } from '@/services/google/sheets'
-import { runSync, pushAll } from '@/services/sync'
+import { runSync, pushAll, pullAll } from '@/services/sync'
 import { useCategoryStore } from './categories'
 import { useRecordStore } from './records'
 import type { SyncResult } from '@/services/sync'
@@ -161,6 +161,30 @@ export const useCloudStore = defineStore('cloud', () => {
     }
   }
 
+  /** 以雲端資料整份覆蓋本機，不做合併 */
+  async function overwriteLocal(): Promise<void> {
+    if (!sheetId.value) return
+
+    state.value = 'syncing'
+    error.value = ''
+
+    try {
+      await requestToken(true)
+      await pullAll(sheetId.value)
+      lastSyncedAt.value = (await getMeta<string>(META_KEYS.lastSyncedAt)) ?? null
+
+      const categoryStore = useCategoryStore()
+      categoryStore.ready = false
+      await categoryStore.init()
+      await useRecordStore().reload()
+
+      state.value = 'idle'
+    } catch (e) {
+      state.value = e instanceof AuthExpiredError ? 'unauthorized' : 'error'
+      error.value = describeError(e)
+    }
+  }
+
   async function disconnect(): Promise<void> {
     await revoke()
     sheetId.value = null
@@ -178,6 +202,6 @@ export const useCloudStore = defineStore('cloud', () => {
     configured, linked, authorized,
     available,
     restore, signInAndList, createAndLink, linkExisting,
-    sync, syncInBackground, overwriteRemote, disconnect,
+    sync, syncInBackground, overwriteRemote, overwriteLocal, disconnect,
   }
 })

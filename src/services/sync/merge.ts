@@ -24,13 +24,25 @@ export interface MergePlan<T> {
   unchanged: number
   /** updatedAt 相同但內容不同，無法判斷版本的筆數 */
   ambiguous: number
+  /** 無法判定的項目明細，供 UI 顯示——只有數字看不出是哪幾筆、差在哪 */
+  ambiguousItems: AmbiguousItem<T>[]
+}
+
+export interface AmbiguousItem<T> {
+  id: string
+  local: T
+  remote: T
+  /** 兩邊實際不同的欄位名稱 */
+  fields: string[]
 }
 
 export function mergeById<T extends Syncable>(local: T[], remote: T[]): MergePlan<T> {
   const localMap = new Map(local.map((item) => [item.id, item]))
   const remoteMap = new Map(remote.map((item) => [item.id, item]))
 
-  const plan: MergePlan<T> = { toLocal: [], toRemote: [], unchanged: 0, ambiguous: 0 }
+  const plan: MergePlan<T> = {
+    toLocal: [], toRemote: [], unchanged: 0, ambiguous: 0, ambiguousItems: [],
+  }
 
   for (const id of new Set([...localMap.keys(), ...remoteMap.keys()])) {
     const l = localMap.get(id)
@@ -56,19 +68,23 @@ export function mergeById<T extends Syncable>(local: T[], remote: T[]): MergePla
       // 若內容仍不同，代表某一邊的 updatedAt 沒有正確推進——
       // 這時不覆寫任何一邊，只回報，避免無聲地弄丟資料。
       plan.unchanged += 1
-      if (!shallowEqual(l, r)) plan.ambiguous += 1
+      const fields = diffFields(l, r)
+      if (fields.length > 0) {
+        plan.ambiguous += 1
+        plan.ambiguousItems.push({ id, local: l, remote: r, fields })
+      }
     }
   }
 
   return plan
 }
 
-function shallowEqual<T extends object>(a: T, b: T): boolean {
-  const keys = new Set([...Object.keys(a), ...Object.keys(b)]) as Set<keyof T>
-  for (const key of keys) {
-    if (a[key] !== b[key]) return false
-  }
-  return true
+/** 兩筆資料實際不同的欄位名稱 */
+function diffFields<T extends object>(a: T, b: T): string[] {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)])
+  return [...keys].filter(
+    (key) => a[key as keyof T] !== b[key as keyof T],
+  )
 }
 
 /** 軟刪除資料保留多久才實體清除 */

@@ -210,6 +210,29 @@ describe('觀看狀態', () => {
     expect(sortRecords(records, 'status', 'asc').map((r) => r.id)).toEqual(['3', '4', '2', '1'])
   })
 
+  it('只改狀態也會推進 updatedAt', async () => {
+    const record = await createRecord(baseInput())
+    await new Promise((r) => setTimeout(r, 2))
+
+    await updateRecord(record.id, { status: 'watching' })
+
+    const updated = await db.watchRecords.get(record.id)
+    // updatedAt 沒推進的話，另一台裝置同步時會判定為「版本相同」而不套用
+    expect(updated!.updatedAt > record.updatedAt).toBe(true)
+    expect(updated!.status).toBe('watching')
+  })
+
+  it('把狀態改回未標記也會推進 updatedAt', async () => {
+    const record = await createRecord(baseInput({ status: 'watching' }))
+    await new Promise((r) => setTimeout(r, 2))
+
+    await updateRecord(record.id, { status: null })
+
+    const updated = await db.watchRecords.get(record.id)
+    expect(updated!.updatedAt > record.updatedAt).toBe(true)
+    expect(updated!.status).toBeNull()
+  })
+
   it('狀態與完結是各自獨立的欄位', async () => {
     const record = await createRecord(baseInput({ status: 'waiting', completed: false }))
     await updateRecord(record.id, { completed: true })

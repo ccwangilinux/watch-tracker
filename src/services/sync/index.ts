@@ -12,6 +12,8 @@ import type { Category, WatchRecord, Syncable } from '@/types/models'
 export interface SyncResult {
   categories: { pulled: number; pushed: number; ambiguous: number }
   records: { pulled: number; pushed: number; ambiguous: number }
+  /** 無法判定版本的紀錄，供 UI 說明是哪幾筆、差在哪個欄位 */
+  conflicts: { title: string; fields: string[] }[]
   purged: number
   syncedAt: string
 }
@@ -71,6 +73,14 @@ export async function runSync(spreadsheetId: string): Promise<SyncResult> {
   return {
     categories: summarize(categoryPlan),
     records: summarize(recordPlan),
+    conflicts: [
+      ...categoryPlan.ambiguousItems.map((item) => ({
+        title: item.local.name, fields: item.fields,
+      })),
+      ...recordPlan.ambiguousItems.map((item) => ({
+        title: item.local.title, fields: item.fields,
+      })),
+    ],
     purged:
       localCategories.length + categoryPlan.toLocal.length - finalCategories.length +
       (localRecords.length + recordPlan.toLocal.length - finalRecords.length),
@@ -93,6 +103,35 @@ async function purge<T extends Syncable>(
 
 function summarize<T>(plan: MergePlan<T>) {
   return { pulled: plan.toLocal.length, pushed: plan.toRemote.length, ambiguous: plan.ambiguous }
+}
+
+/**
+ * 以雲端資料整份覆蓋本機，不做合併。
+ *
+ * 對稱於 pushAll。用於雲端才是正確版本的情況——
+ * 例如兩台裝置的 updatedAt 相同但內容不同，合併演算法會保守地
+ * 兩邊都不覆寫，這時需要明確指定要以哪一邊為準。
+ */
+export async function pullAll(spreadsheetId: string): Promise<{ categories: number; records: number }> {
+  const [categoryValues, recordValues] = await Promise.all([
+    readSheet(spreadsheetId, CATEGORY_SHEET),
+    readSheet(spreadsheetId, RECORD_SHEET),
+  ])
+
+  const categories = parseSheet(categoryValues, rowToCategory)
+  const records = parseSheet(recordValues, rowToRecord)
+
+  await db.transaction('rw', db.categories, db.watchRecords, async () => {
+    // 這裡實體清空是安全的：整份資料都要換成雲端版本，
+    // 而雲端保有完整內容（含軟刪除標記），不會遺失刪除紀錄
+    await db.categories.clear()
+    await db.watchRecords.clear()
+    await db.categories.bulkPut(categories)
+    await db.watchRecords.bulkPut(records)
+  })
+
+  await setMeta(META_KEYS.lastSyncedAt, now())
+  return { categories: categories.length, records: records.length }
 }
 
 /** 首次連結：把本機資料整份推上去，不做合併 */

@@ -19,11 +19,13 @@ const cloud = useCloudStore()
 const confirmDisconnect = ref(false)
 const confirmOverwrite = ref(false)
 const pickerOpen = ref(false)
+const confirmPull = ref(false)
 const confirmImport = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const importMode = ref<ImportMode>('merge')
 const pendingFile = ref<File | null>(null)
 const message = ref('')
+const conflicts = ref<{ title: string; fields: string[] }[]>([])
 const busy = ref(false)
 
 const statusText = computed(() => {
@@ -76,11 +78,18 @@ async function syncNow() {
     message.value =
       `同步完成：下載 ${categories.pulled + records.pulled} 筆，` +
       `上傳 ${categories.pushed + records.pushed} 筆`
-    const ambiguous = categories.ambiguous + records.ambiguous
-    if (ambiguous > 0) {
-      message.value += `（${ambiguous} 筆版本相同但內容不一致，已保留兩邊未覆寫）`
+    conflicts.value = cloud.lastResult.conflicts
+    if (conflicts.value.length > 0) {
+      message.value += `。有 ${conflicts.value.length} 筆兩邊修改時間相同但內容不同，` +
+        '為避免誤刪資料，這些沒有被覆寫'
     }
   }
+}
+
+async function overwriteLocal() {
+  message.value = ''
+  await cloud.overwriteLocal()
+  if (cloud.state === 'idle') message.value = '已用雲端資料覆蓋本機'
 }
 
 async function overwriteRemote() {
@@ -183,6 +192,11 @@ async function doImport() {
       </p>
 
       <button class="btn" type="button" :disabled="cloud.state === 'syncing'"
+        @click="confirmPull = true">
+        以雲端資料覆蓋本機
+      </button>
+
+      <button class="btn" type="button" :disabled="cloud.state === 'syncing'"
         @click="confirmOverwrite = true">
         以本機資料覆蓋雲端
       </button>
@@ -196,6 +210,22 @@ async function doImport() {
 
     <p v-if="cloud.error" class="error">{{ cloud.error }}</p>
     <p v-if="message" class="success">{{ message }}</p>
+
+    <div v-if="conflicts.length" class="conflicts">
+      <p class="conflicts__title">無法自動判定的項目</p>
+      <ul>
+        <li v-for="(item, i) in conflicts.slice(0, 8)" :key="i">
+          {{ item.title }}
+          <span class="conflicts__fields">{{ item.fields.join('、') }}</span>
+        </li>
+      </ul>
+      <p v-if="conflicts.length > 8" class="conflicts__more">
+        還有 {{ conflicts.length - 8 }} 筆
+      </p>
+      <p class="conflicts__help">
+        用下方的「以雲端覆蓋本機」或「以本機覆蓋雲端」明確指定要以哪一邊為準。
+      </p>
+    </div>
   </section>
 
   <section class="card">
@@ -250,6 +280,15 @@ async function doImport() {
 
     <button class="btn" type="button" @click="createNew">建立另一份新的試算表</button>
   </BottomSheet>
+
+  <ConfirmDialog
+    v-model="confirmPull"
+    title="以雲端資料覆蓋本機"
+    message="這台裝置上的資料會被雲端試算表的內容完全取代。若本機有尚未同步的變更，那些變更會遺失。"
+    confirm-text="覆蓋本機"
+    danger
+    @confirm="overwriteLocal"
+  />
 
   <ConfirmDialog
     v-model="confirmOverwrite"
@@ -408,6 +447,20 @@ async function doImport() {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.conflicts {
+  padding: var(--sp-3);
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
+  border-radius: var(--r-md);
+  font-size: 12px;
+}
+
+.conflicts__title { font-weight: 700; color: var(--warning); margin-bottom: var(--sp-2); }
+.conflicts li { padding: 2px 0; color: var(--text-dim); }
+.conflicts__fields { color: var(--text-faint); margin-left: var(--sp-2); }
+.conflicts__more { margin-top: var(--sp-1); color: var(--text-faint); }
+.conflicts__help { margin-top: var(--sp-2); color: var(--text-faint); line-height: 1.6; }
 
 .hidden-input { display: none; }
 </style>
