@@ -6,6 +6,21 @@ const router = useRouter()
 
 const configured = CLIENT_ID.trim() !== ''
 const origin = location.origin
+
+/**
+ * Google 端的操作入口。
+ * 集中在這裡而不是散在文字裡，介面改版時只要改這幾個網址。
+ */
+const LINKS = {
+  drive: 'https://drive.google.com/',
+  permissions: 'https://myaccount.google.com/connections',
+  console: 'https://console.cloud.google.com/',
+  sheetsApi: 'https://console.cloud.google.com/apis/library/sheets.googleapis.com',
+  driveApi: 'https://console.cloud.google.com/apis/library/drive.googleapis.com',
+  authPlatform: 'https://console.cloud.google.com/auth/overview',
+  audience: 'https://console.cloud.google.com/auth/audience',
+  clients: 'https://console.cloud.google.com/auth/clients',
+}
 </script>
 
 <template>
@@ -46,6 +61,17 @@ const origin = location.origin
       <b>那個「不安全」的警告是正常的。</b>
       它出現的原因是這個應用程式沒有送交 Google 審核，而不是連線有問題。
       這是個人自用的工具，你授權的對象是你自己架設的網頁。
+    </div>
+
+    <div class="links">
+      <a class="link" :href="LINKS.drive" target="_blank" rel="noopener">
+        <span class="link__name">Google 雲端硬碟</span>
+        <span class="link__desc">查看本 App 建立的試算表</span>
+      </a>
+      <a class="link" :href="LINKS.permissions" target="_blank" rel="noopener">
+        <span class="link__name">已連結的應用程式</span>
+        <span class="link__desc">要撤銷授權時在這裡移除</span>
+      </a>
     </div>
   </section>
 
@@ -119,15 +145,40 @@ const origin = location.origin
     </p>
 
     <ol class="steps">
-      <li>到 Google Cloud Console 建立專案</li>
-      <li>在「API 和服務 → 程式庫」啟用 <b>Google Sheets API</b> 與 <b>Google Drive API</b></li>
       <li>
-        到「Google 驗證平台」設定應用程式名稱與支援信箱，
-        目標對象選<b>外部</b>，並把自己的帳號加入<b>測試使用者</b>
+        建立一個 Google Cloud 專案
+        <a class="inline" :href="LINKS.console" target="_blank" rel="noopener">
+          開啟 Cloud Console ↗
+        </a>
       </li>
       <li>
-        在「用戶端」建立 <b>網頁應用程式</b> 類型的 OAuth 用戶端，
-        已授權的 JavaScript 來源填入：
+        啟用兩個 API
+        <a class="inline" :href="LINKS.sheetsApi" target="_blank" rel="noopener">
+          Google Sheets API ↗
+        </a>
+        <a class="inline" :href="LINKS.driveApi" target="_blank" rel="noopener">
+          Google Drive API ↗
+        </a>
+        <span class="muted">記得先在頁面上方切換到剛建立的專案</span>
+      </li>
+      <li>
+        設定應用程式名稱與支援信箱，目標對象選<b>外部</b>
+        <a class="inline" :href="LINKS.authPlatform" target="_blank" rel="noopener">
+          Google 驗證平台 ↗
+        </a>
+      </li>
+      <li>
+        把自己的 Google 帳號加入<b>測試使用者</b>，否則登入會被拒絕
+        <a class="inline" :href="LINKS.audience" target="_blank" rel="noopener">
+          目標對象設定 ↗
+        </a>
+      </li>
+      <li>
+        建立 <b>網頁應用程式</b> 類型的 OAuth 用戶端
+        <a class="inline" :href="LINKS.clients" target="_blank" rel="noopener">
+          用戶端管理 ↗
+        </a>
+        <span>已授權的 JavaScript 來源填入：</span>
         <code class="block">{{ origin }}</code>
         <span class="muted">重新導向 URI 留空——本 App 使用 popup 流程，不需要它</span>
       </li>
@@ -226,6 +277,43 @@ b { color: var(--text); }
   background: color-mix(in srgb, var(--warning) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--warning) 28%, transparent);
 }
+
+.links { display: flex; flex-direction: column; gap: var(--sp-2); margin-top: var(--sp-3); }
+
+.link {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-md);
+}
+
+.link::after {
+  content: '↗';
+  position: absolute;
+  right: var(--sp-3);
+  color: var(--text-faint);
+}
+
+.link { position: relative; padding-right: var(--sp-6); }
+.link__name { font-weight: 600; color: var(--accent); }
+.link__desc { font-size: 12px; color: var(--text-faint); }
+
+.inline {
+  display: inline-block;
+  margin: 4px var(--sp-2) 0 0;
+  padding: 2px var(--sp-2);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: var(--r-sm);
+  white-space: nowrap;
+}
+
+.steps li > span { display: block; }
 
 code {
   padding: 1px 5px;

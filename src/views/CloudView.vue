@@ -180,6 +180,13 @@ async function doImport() {
         <div><dt>最後同步</dt><dd>{{ formatRelative(cloud.lastSyncedAt) }}</dd></div>
       </dl>
 
+      <a
+        class="btn btn--link"
+        :href="`https://docs.google.com/spreadsheets/d/${cloud.sheetId}`"
+        target="_blank"
+        rel="noopener"
+      >在 Google 試算表中開啟 ↗</a>
+
       <button class="btn btn--primary" type="button" :disabled="cloud.state === 'syncing'"
         @click="syncNow">
         {{ cloud.state === 'syncing' ? '同步中…' : '立即同步' }}
@@ -400,6 +407,14 @@ async function doImport() {
 
 .btn:disabled { opacity: 0.45; }
 .btn--primary { background: var(--gradient); color: #fff; }
+
+.btn--link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
 .btn--danger {
   background: color-mix(in srgb, var(--danger) 14%, transparent);
   color: var(--danger);
