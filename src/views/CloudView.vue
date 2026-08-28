@@ -144,6 +144,8 @@ async function doImport() {
   <header class="head">
     <button class="back" type="button" @click="router.back()">‹ 返回</button>
     <h1 class="head__title">雲端同步</h1>
+    <button class="help" type="button" aria-label="設定說明"
+      @click="router.push('/settings/cloud-guide')">?</button>
   </header>
 
   <section class="card">
@@ -335,7 +337,19 @@ async function doImport() {
 <style scoped>
 .head { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-4); }
 .back { min-height: var(--touch); padding-right: var(--sp-1); color: var(--text-dim); font-weight: 600; }
-.head__title { font-size: 20px; font-weight: 700; }
+.head__title { flex: 1 1 auto; font-size: 20px; font-weight: 700; }
+
+.help {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: var(--r-full);
+}
 
 .card {
   padding: var(--sp-4);

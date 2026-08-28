@@ -56,6 +56,12 @@ const router = createRouter({
       component: () => import('@/views/CloudView.vue'),
       meta: { title: '雲端同步' },
     },
+    {
+      path: '/settings/cloud-guide',
+      name: 'cloud-guide',
+      component: () => import('@/views/CloudGuideView.vue'),
+      meta: { title: 'Google 雲端設定說明' },
+    },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
   /**

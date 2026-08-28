@@ -122,6 +122,10 @@ async function clearAll() {
       <span>JSON 匯出 / 匯入</span>
       <span class="row__value">›</span>
     </button>
+    <button class="row" type="button" @click="router.push('/settings/cloud-guide')">
+      <span>Google 綁定與同步說明</span>
+      <span class="row__value">教學 ›</span>
+    </button>
   </section>
 
   <section class="group">
