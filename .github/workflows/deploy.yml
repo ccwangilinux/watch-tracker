@@ -34,11 +34,9 @@ jobs:
 
       - run: npm run build
 
+      # 前提：repo 的 Settings → Pages → Source 必須先手動設為 GitHub Actions。
+      # 這裡不用 enablement: true 自動建站，GITHUB_TOKEN 的權限不足以代為建立。
       - uses: actions/configure-pages@v5
-        with:
-          # 第一次執行時自動啟用 repo 的 Pages 設定，
-          # 省去手動到 Settings → Pages 選 Source 的步驟
-          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
