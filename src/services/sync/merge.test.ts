@@ -58,6 +58,17 @@ describe('mergeById', () => {
     expect(plan.ambiguous).toBe(1)
   })
 
+  it('回報無法判定的項目時，指出實際不同的欄位', () => {
+    // 只給數字的話使用者看不出是哪幾筆、差在哪，只會覺得同步沒生效
+    const plan = mergeById(
+      [cat('a', T1, { name: 'X', icon: '🎬' })],
+      [cat('a', T1, { name: 'Y', icon: '🎬' })],
+    )
+    expect(plan.ambiguousItems).toHaveLength(1)
+    expect(plan.ambiguousItems[0]!.fields).toEqual(['name'])
+    expect(plan.ambiguousItems[0]!.id).toBe('a')
+  })
+
   it('刪除視為一般更新：本機刪除會傳播到雲端', () => {
     const plan = mergeById([cat('a', T2, { deletedAt: T2 })], [cat('a', T1)])
     expect(plan.toRemote[0]!.deletedAt).toBe(T2)
@@ -76,7 +87,7 @@ describe('mergeById', () => {
 
   it('兩邊都空時不產生任何動作', () => {
     expect(mergeById<Category>([], [])).toEqual({
-      toLocal: [], toRemote: [], unchanged: 0, ambiguous: 0,
+      toLocal: [], toRemote: [], unchanged: 0, ambiguous: 0, ambiguousItems: [],
     })
   })
 
