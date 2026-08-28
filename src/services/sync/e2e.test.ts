@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { db } from '@/db'
 import { createRecord, updateRecord } from '@/services/records'
 import { createCategory } from '@/services/categories'
