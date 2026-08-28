@@ -9,7 +9,7 @@ import { useCloudStore } from '@/stores/cloud'
 import { useCategoryStore } from '@/stores/categories'
 import { useRecordStore } from '@/stores/records'
 import { SORT_OPTIONS } from '@/services/records'
-import { formatRelative } from '@/utils/datetime'
+import { formatRelative, formatDateTime } from '@/utils/datetime'
 import { db } from '@/db'
 import { useClipboard } from '@/composables/useClipboard'
 import { markSeeded } from '@/db/seed'
@@ -29,6 +29,9 @@ const { copied, copy } = useClipboard(2000)
  * 寫死的話換 repo 名稱或改用自訂網域就會分享出錯誤的連結。
  */
 const appUrl = computed(() => new URL(import.meta.env.BASE_URL, location.origin).href)
+
+/** 建置時間：用來確認這台裝置跑的是不是最新版 */
+const buildTime = formatDateTime(__BUILD_TIME__)
 
 // Web Share API 只在部分瀏覽器可用；iOS Safari 支援，桌面 Firefox 不支援
 const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
@@ -155,6 +158,10 @@ async function clearAll() {
     <div class="row row--static">
       <span>我的觀看紀錄</span>
       <span class="row__value">Watch Tracker</span>
+    </div>
+    <div class="row row--static">
+      <span>版本</span>
+      <span class="row__value">{{ buildTime }}</span>
     </div>
     <p class="hint">
       追劇不忘，記錄精彩時刻。資料存在你自己的裝置上，

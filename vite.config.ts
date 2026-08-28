@@ -6,8 +6,15 @@ import { fileURLToPath, URL } from 'node:url'
 // GitHub Pages: https://ccwangilinux.github.io/watch-tracker/
 const BASE = '/watch-tracker/'
 
+// 建置時間戳，用於在設定頁確認裝置上跑的是哪一版——
+// PWA 會提供 Service Worker 的快取版本，光看畫面分辨不出新舊
+const BUILD_TIME = new Date().toISOString()
+
 export default defineConfig({
   base: BASE,
+  define: {
+    __BUILD_TIME__: JSON.stringify(BUILD_TIME),
+  },
   plugins: [
     vue(),
     VitePWA({
