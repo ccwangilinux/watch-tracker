@@ -1,5 +1,6 @@
 /*
- * 設計 token — 深色為唯一實作主題，淺色僅預留變數層供未來擴充。
+ * 設計 token — 這裡是「預設主題（午夜紫）」的完整值，也是所有主題的骨架。
+ * 其餘 7 種主題在 themes.css 以 [data-scheme] / [data-theme] 覆寫。
  * 所有顏色一律走變數，元件內不得出現字面色值。
  */
 :root {
@@ -19,12 +20,21 @@
   --border:      #2a3357;
   --border-soft: #212945;
 
-  /* 主色：紫藍 → 粉紫 */
+  /*
+   * 主色：紫藍 → 粉紫。
+   * accent-soft / gradient / shadow-fab 由 accent 推導而不寫死，
+   * 一個主題只要覆寫 --accent 與 --accent-2，衍生色就會自己跟上。
+   *
+   * 注意：var() 是在「宣告它的那個元素」上展開，不是在使用端。
+   * 這三個值只在 :root 宣告的話，把 data-theme 掛在 :root 以外的元素上
+   * （設定頁的色票預覽就是這樣）拿到的會是 :root 的 accent。
+   * 所以 themes.css 的 [data-scheme] 也各自宣告了一份同樣的公式。
+   */
   --accent:        #7c5cff;
   --accent-strong: #6845ff;
-  --accent-soft:   rgba(124, 92, 255, 0.16);
   --accent-2:      #ff4fa3;
-  --gradient:      linear-gradient(135deg, #7c5cff 0%, #ff4fa3 100%);
+  --accent-soft:   color-mix(in srgb, var(--accent) 16%, transparent);
+  --gradient:      linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
 
   /*
    * 觀看狀態（已完結是獨立維度，用 --success）。
@@ -44,6 +54,16 @@
   --success:  #2dd4a7;
   --warning:  #ffb020;
   --danger:   #ff5470;
+
+  /*
+   * 疊在 accent / gradient 之上的前景色、開關鈕、彈窗遮罩。
+   * 淺色主題的遮罩與陰影不能沿用深色的黑，會糊成一片，
+   * 所以這幾個值也必須是 token 而不是元件裡的 rgba(0,0,0,…)。
+   */
+  --on-accent:   #ffffff;
+  --knob:        #ffffff;
+  --knob-shadow: rgba(0, 0, 0, 0.4);
+  --scrim:       rgba(0, 0, 0, 0.62);
 
   /* 圓角 */
   --r-sm: 8px;
@@ -73,7 +93,7 @@
   --header-h: 56px;
 
   --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.35);
-  --shadow-fab:  0 6px 20px rgba(124, 92, 255, 0.45);
+  --shadow-fab:  0 6px 20px color-mix(in srgb, var(--accent) 45%, transparent);
 
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
 }

@@ -50,7 +50,7 @@ function onConfirm() {
   display: grid;
   place-items: center;
   padding: var(--sp-5);
-  background: rgba(0, 0, 0, 0.65);
+  background: var(--scrim);
 }
 
 .dialog {

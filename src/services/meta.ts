@@ -13,6 +13,7 @@ export const META_KEYS = {
   lastSortDirection: 'lastSortDirection',
   lastStatusFilter: 'lastStatusFilter',
   lastViewMode: 'lastViewMode',
+  theme: 'theme',
   sheetId: 'sheetId',
   lastSyncedAt: 'lastSyncedAt',
   autoSync: 'autoSync',

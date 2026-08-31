@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 npm run dev        # dev server，埠號固定 5174（strictPort）
-npm test           # vitest，86 項
+npm test           # vitest，87 項
 npm run build      # vue-tsc -b && vite build
 npm run preview    # 測 PWA 必須用這個，dev 模式不註冊 Service Worker
 npx vitest run src/services/sync   # 只跑同步相關測試
@@ -25,9 +25,26 @@ python3 scripts/import-wt.py wt.txt > out.json # 文字紀錄轉備份 JSON
 
 **推送前一定要先跑 `npm test` 與 `npm run build`。** 推送即部署，CI 會擋下失敗，但那是浪費一次來回。
 
+## Git 工作流程（硬性要求）
+
+**改完就自動 commit 並 push，不必再問。** 使用者已明確授權，完成一項工作後直接依序執行：
+
+1. `npm test` 與 `npm run build` **都要過**——沒過就不 commit，先修好
+2. `git config user.email` 確認生效的是專案層級的值（見下方「Git 身份」）
+3. 依主題拆 commit，一個 commit 一件事；訊息用繁體中文的 Conventional Commits
+4. `git push`
+
+只有這幾種情況要先問過再動手：
+
+- 改寫已推上去的歷史：`rebase`、`amend`、`push --force`
+- 刪檔案、或超出使用者原本要求範圍的大幅重構
+- 測試或建置失敗且修不掉——**如實回報卡在哪**，不要用 `--no-verify`、`skip` 或註解掉測試來繞過
+
+**push 就是部署到線上版**，所以第 1 點沒有商量空間。
+
 ## 進度
 
-功能面已完整：專案骨架、IndexedDB 資料層、紀錄 CRUD/搜尋/排序、觀看狀態標籤、PWA、Google 雲端雙向同步與單向覆蓋、JSON 備份、CI/CD、設定說明頁。
+功能面已完整：專案骨架、IndexedDB 資料層、紀錄 CRUD/搜尋/排序、觀看狀態標籤、8 種主題（4 深 4 淺）、PWA、Google 雲端雙向同步與單向覆蓋、JSON 備份、CI/CD、設定說明頁。
 
 未做：紀錄列表的拖曳排序（排序邏輯與 `sortOrder` 已就緒，只差 UI；長列表在手機上拖曳體驗不佳，刻意暫緩）。
 
@@ -51,6 +68,8 @@ src/
 ### 資料格式（全專案統一，不可混用）
 
 - `watchTime` 存**總秒數**（number），上限 999:59:59 = 3599999
+- `season` 的 **0 代表未設定**（不是第零季），1–99 才是實際季數。新紀錄預設 0；`episode` 新紀錄預設 0。用 0 而不是 null 是因為 Sheets 的空白儲存格讀回來轉數字本來就是 0，兩端不需要額外分支
+- 列表上 `season <= 1` 與 `episode === 0` 都不顯示標籤。**第一季刻意也不顯示**：第一季是預設情況，標出來只是每張卡片多一個講廢話的標籤；而且舊資料與 `import-wt.py` 的舊預設都是 1，一旦顯示會讓幾乎每筆都長出「第一季」
 - 時間戳存 **ISO 8601 UTC 字串**，固定長度可直接字典序比較
 - id 一律 UUID v4
 - 刪除一律**軟刪除**（`deletedAt`），30 天後才實體清除
@@ -100,6 +119,10 @@ src/
 
 **`useRegisterSW` 必須做成模組層單例。** 多個元件各自呼叫會註冊多份狀態，一邊按了更新另一邊不會反應。
 
+**CSS 變數裡的 `var()` 是在「宣告它的元素」上展開，不是使用端。** `--gradient: linear-gradient(…, var(--accent), …)` 只寫在 `:root`，就永遠用 `:root` 的 accent；把 `data-theme` 掛在 `:root` 以外的元素（設定頁的色票預覽）拿到的會是預設主題的漸層，8 種色票長得一模一樣。衍生色（`--gradient` / `--accent-soft` / `--shadow-fab`）必須在 `[data-scheme]` 那層再宣告一次，才與 `[data-theme]` 同層展開。
+
+**主題必須在 Vue 掛載前就套用。** 權威值在 IndexedDB，是非同步的，等它讀完再套用，每次從主畫面啟動 PWA 都會先閃一下預設的深藍底。`index.html` 的內聯腳本讀 localStorage 的 `wt.boot` 先塗好底色，`services/theme.ts` 每次切換時同步更新那份快取與 `#boot-paint`（打包後內聯樣式與 base.css 的先後順序不該由程式去賭）。切換主題也要一併改 `<meta name="theme-color">`，否則 iOS standalone 的狀態列會留一條異色。
+
 **中文排序必須用 `localeCompare('zh-Hant')`。** UTF-16 碼位順序與筆劃、注音無關。
 
 **TypeScript 7 與 vue-tsc 不相容。** TS 7 是原生 Go 版本，移除了 `./lib/tsc` 子路徑。`typescript` 鎖在 `~5.9`，不要升。
@@ -110,7 +133,11 @@ src/
 
 ## UI 慣例
 
-深色為唯一實作主題（淺色僅預留變數層）。元件內不得出現字面色值，一律走 `tokens.css`。
+**8 種主題，4 深 4 淺**，深淺都是實作過的一等公民。元件內不得出現字面色值，一律走 `tokens.css` / `themes.css`——包含遮罩、開關鈕、疊在主色上的前景色（`--scrim` / `--knob` / `--on-accent`），淺色主題不能沿用深色那組 `rgba(0,0,0,…)`。
+
+主題分兩層覆寫：`[data-scheme="dark|light"]` 放狀態色、季集時間色、語意色、遮罩與陰影；`[data-theme="…"]` 每個主題只放 13 個值（5 層背景、3 級文字、2 種線條、3 個主色）。兩者都是屬性選擇器、同一 specificity，**scheme 必須寫在 theme 之前**。
+
+主題存 `meta` 表、**不進雲端同步**（換裝置本來就該各自決定），另在 localStorage 留一份開機快取供 `index.html` 的內聯腳本防閃爍。
 
 **狀態標籤與觀看資訊必須分屬不同色系**：狀態（粉/橘/灰）走外框樣式靠右，季/集/時間（紫/青/琥珀）走填色靠左。曾經狀態的「正在看」與集數用了完全相同的青色，同一張卡片上兩個青色標籤並排無法分辨。
 

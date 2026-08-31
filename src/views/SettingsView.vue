@@ -4,11 +4,13 @@ import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import SortSheet from '@/components/SortSheet.vue'
+import ThemeSheet from '@/components/ThemeSheet.vue'
 import { useUiStore } from '@/stores/ui'
 import { useCloudStore } from '@/stores/cloud'
 import { useCategoryStore } from '@/stores/categories'
 import { useRecordStore } from '@/stores/records'
 import { SORT_OPTIONS } from '@/services/records'
+import { themeOf } from '@/constants/themes'
 import { formatRelative, formatDate } from '@/utils/datetime'
 import { db } from '@/db'
 import { useClipboard } from '@/composables/useClipboard'
@@ -17,9 +19,10 @@ import { markSeeded } from '@/db/seed'
 
 const router = useRouter()
 const cloud = useCloudStore()
-const { sortKey, sortDirection } = storeToRefs(useUiStore())
+const { sortKey, sortDirection, theme } = storeToRefs(useUiStore())
 
 const sortOpen = ref(false)
+const themeOpen = ref(false)
 const confirmClear = ref(false)
 
 const { copied, copy } = useClipboard(2000)
@@ -102,11 +105,11 @@ async function clearAll() {
 
   <section class="group">
     <h2 class="group__title">外觀</h2>
-    <div class="row row--static">
+    <button class="row" type="button" @click="themeOpen = true">
       <span>主題</span>
-      <span class="row__value">深色</span>
-    </div>
-    <p class="hint">目前僅提供深色模式，淺色模式已預留於樣式層，未來可再開啟。</p>
+      <span class="row__value">{{ themeOf(theme).label }} ›</span>
+    </button>
+    <p class="hint">深色、淺色各 4 種，換了立刻生效。主題只存在這台裝置，不會同步到雲端。</p>
   </section>
 
   <section class="group">
@@ -203,6 +206,8 @@ async function clearAll() {
       連結 Google 後才會備份到你自己的私人試算表。
     </p>
   </section>
+
+  <ThemeSheet v-model="themeOpen" v-model:theme="theme" />
 
   <SortSheet v-model="sortOpen" v-model:sort-key="sortKey" v-model:sort-direction="sortDirection" />
 

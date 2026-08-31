@@ -193,7 +193,7 @@ function doDelete() {
   margin-top: var(--sp-4);
   border-radius: var(--r-lg);
   background: var(--gradient);
-  color: #fff;
+  color: var(--on-accent);
   font-weight: 700;
 }
 </style>

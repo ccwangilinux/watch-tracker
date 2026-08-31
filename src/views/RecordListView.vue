@@ -242,7 +242,7 @@ watch(() => props.categoryId, (id) => {
   place-items: center;
   font-size: 30px;
   font-weight: 300;
-  color: #fff;
+  color: var(--on-accent);
   border-radius: var(--r-full);
   background: var(--gradient);
   box-shadow: var(--shadow-fab);

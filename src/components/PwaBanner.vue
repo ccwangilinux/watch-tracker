@@ -48,7 +48,7 @@ const { needRefresh, applyUpdate } = usePwaUpdate()
 
 .banner--update {
   background: var(--gradient);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .banner--offline {
@@ -64,8 +64,8 @@ const { needRefresh, applyUpdate } = usePwaUpdate()
   min-height: 36px;
   padding: 0 var(--sp-3);
   border-radius: var(--r-full);
-  background: rgba(255, 255, 255, 0.22);
-  color: #fff;
+  background: color-mix(in srgb, var(--on-accent) 22%, transparent);
+  color: var(--on-accent);
   font-weight: 700;
 }
 
@@ -75,7 +75,7 @@ const { needRefresh, applyUpdate } = usePwaUpdate()
   height: 36px;
   display: grid;
   place-items: center;
-  color: rgba(255, 255, 255, 0.85);
+  color: color-mix(in srgb, var(--on-accent) 85%, transparent);
 }
 
 .slide-enter-active, .slide-leave-active { transition: transform 0.25s var(--ease), opacity 0.25s var(--ease); }

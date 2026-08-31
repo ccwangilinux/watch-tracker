@@ -59,8 +59,8 @@ defineProps<{ onLabel: string; offLabel: string }>()
   width: 26px;
   height: 26px;
   border-radius: var(--r-full);
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  background: var(--knob);
+  box-shadow: 0 1px 3px var(--knob-shadow);
   transition: transform 0.2s var(--ease);
 }
 

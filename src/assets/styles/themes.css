@@ -1,0 +1,247 @@
+/*
+ * 8 種主題（4 深 4 淺）。
+ *
+ * 分兩層覆寫，理由是深/淺兩組之間真正不同的是「語意色與遮罩」，
+ * 而 8 種主題彼此不同的只有「背景階層 + 文字 + 線條 + 主色」：
+ *
+ *   [data-scheme="dark|light"] — 兩組各寫一次：狀態色、季集時間色、語意色、遮罩、陰影
+ *   [data-theme="…"]           — 每個主題 13 個值：5 層背景、3 級文字、2 種線條、3 個主色
+ *
+ * 兩者都是 (0,1,0) 的屬性選擇器，靠檔案順序決勝負——scheme 一定要寫在 theme 前面。
+ *
+ * 選擇器刻意不加 :root：設定頁的色票預覽會把 data-theme 掛在一個 <span> 上，
+ * 讓預覽直接吃同一份變數，就不必在 JS 裡再抄一份色碼（抄的那份遲早會跟這裡對不上）。
+ */
+
+/* ── 深色共用 ───────────────────────────────────────── */
+[data-scheme='dark'] {
+  color-scheme: dark;
+
+  --st-watching: #ff6b9d;
+  --st-waiting:  #ff8c42;
+  --st-planned:  #94a3b8;
+
+  --season:  #c4a5ff;
+  --episode: #5ad1ee;
+  --watched: #ffc457;
+
+  --success: #2dd4a7;
+  --warning: #ffb020;
+  --danger:  #ff5470;
+
+  --on-accent:   #ffffff;
+  --knob:        #ffffff;
+  --knob-shadow: rgba(0, 0, 0, 0.4);
+  --scrim:       rgba(0, 0, 0, 0.62);
+
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.35);
+
+  /*
+   * 與 tokens.css 同一組公式。必須在這裡重寫一次：
+   * var() 在宣告處展開，只寫在 :root 的話，掛在預覽 <span> 上的 data-theme
+   * 拿到的會是 :root 的 accent，8 種色票就會長得一模一樣。
+   * 這裡與 [data-theme] 同層，展開時吃得到該主題的 --accent。
+   */
+  --accent-soft: color-mix(in srgb, var(--accent) 16%, transparent);
+  --gradient:    linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+  --shadow-fab:  0 6px 20px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* ── 淺色共用 ───────────────────────────────────────── */
+[data-scheme='light'] {
+  color-scheme: light;
+
+  /*
+   * 標籤是 14% 底色 + 同色文字。淺底上若沿用深色主題那組亮色，
+   * 底色會淡到看不見、文字也撐不起對比，所以整組換成同色相的深階。
+   */
+  --st-watching: #d1246c;
+  --st-waiting:  #b8510d;
+  --st-planned:  #566072;
+
+  --season:  #6d28d9;
+  --episode: #0e7490;
+  --watched: #9a600b;
+
+  --success: #0d8a6a;
+  --warning: #9a600b;
+  --danger:  #cf2233;
+
+  --on-accent:   #ffffff;
+  --knob:        #ffffff;
+  --knob-shadow: rgba(24, 30, 60, 0.3);
+  --scrim:       rgba(16, 20, 40, 0.42);
+
+  /* 淺底用純黑陰影會發灰，帶一點藍才像影子 */
+  --shadow-card: 0 2px 10px rgba(24, 30, 60, 0.1);
+
+  /*
+   * 與 tokens.css 同一組公式。必須在這裡重寫一次：
+   * var() 在宣告處展開，只寫在 :root 的話，掛在預覽 <span> 上的 data-theme
+   * 拿到的會是 :root 的 accent，8 種色票就會長得一模一樣。
+   * 這裡與 [data-theme] 同層，展開時吃得到該主題的 --accent。
+   */
+  --accent-soft: color-mix(in srgb, var(--accent) 16%, transparent);
+  --gradient:    linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+  --shadow-fab:  0 6px 20px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* ── 深色 1／午夜紫（預設，與 tokens.css 的值相同） ──── */
+[data-theme='midnight'] {
+  --bg:          #0b0e1a;
+  --bg-elevated: #121729;
+  --surface:     #171d33;
+  --surface-2:   #1f2743;
+  --surface-3:   #2a3357;
+
+  --text:        #eef1fb;
+  --text-dim:    #9aa3c4;
+  --text-faint:  #646d92;
+
+  --border:      #2a3357;
+  --border-soft: #212945;
+
+  --accent:        #7c5cff;
+  --accent-strong: #6845ff;
+  --accent-2:      #ff4fa3;
+}
+
+/* ── 深色 2／深海青 ─────────────────────────────────── */
+[data-theme='ocean'] {
+  --bg:          #06141d;
+  --bg-elevated: #0b1e2b;
+  --surface:     #102634;
+  --surface-2:   #163445;
+  --surface-3:   #1f4459;
+
+  --text:        #e8f4fa;
+  --text-dim:    #93b0c0;
+  --text-faint:  #5f7e8f;
+
+  --border:      #1f4459;
+  --border-soft: #173340;
+
+  --accent:        #22b8d6;
+  --accent-strong: #0e9fbd;
+  --accent-2:      #3ddc97;
+}
+
+/* ── 深色 3／暗夜琥珀 ───────────────────────────────── */
+[data-theme='ember'] {
+  --bg:          #14100c;
+  --bg-elevated: #1e1813;
+  --surface:     #261e18;
+  --surface-2:   #332821;
+  --surface-3:   #45362c;
+
+  --text:        #f7efe6;
+  --text-dim:    #c0ab99;
+  --text-faint:  #8b7867;
+
+  --border:      #45362c;
+  --border-soft: #332821;
+
+  --accent:        #ff7a45;
+  --accent-strong: #ef6329;
+  --accent-2:      #ffcc4d;
+}
+
+/* ── 深色 4／純黑（OLED 螢幕真正不發光的黑） ────────── */
+[data-theme='noir'] {
+  --bg:          #000000;
+  --bg-elevated: #0c0c0e;
+  --surface:     #131316;
+  --surface-2:   #1c1c20;
+  --surface-3:   #26262c;
+
+  --text:        #f2f2f5;
+  --text-dim:    #a0a0aa;
+  --text-faint:  #6e6e78;
+
+  --border:      #26262c;
+  --border-soft: #1b1b20;
+
+  --accent:        #7d8cff;
+  --accent-strong: #6272ff;
+  --accent-2:      #c084fc;
+}
+
+/* ── 淺色 1／晨光白 ─────────────────────────────────── */
+[data-theme='daylight'] {
+  --bg:          #f5f6fb;
+  --bg-elevated: #ffffff;
+  --surface:     #ffffff;
+  --surface-2:   #eef0f8;
+  --surface-3:   #e2e5f0;
+
+  --text:        #171b30;
+  --text-dim:    #4d5470;
+  --text-faint:  #757c95;
+
+  --border:      #d9dced;
+  --border-soft: #e8eaf4;
+
+  --accent:        #6845ff;
+  --accent-strong: #5334e6;
+  --accent-2:      #e0338a;
+}
+
+/* ── 淺色 2／米紙 ───────────────────────────────────── */
+[data-theme='paper'] {
+  --bg:          #f7f2e8;
+  --bg-elevated: #fffdf7;
+  --surface:     #fffdf7;
+  --surface-2:   #f0e9db;
+  --surface-3:   #e4dbc9;
+
+  --text:        #262017;
+  --text-dim:    #5d5344;
+  --text-faint:  #877b68;
+
+  --border:      #ddd2bd;
+  --border-soft: #ebe2d2;
+
+  --accent:        #b45309;
+  --accent-strong: #96420a;
+  --accent-2:      #b91c5c;
+}
+
+/* ── 淺色 3／薄荷 ───────────────────────────────────── */
+[data-theme='mint'] {
+  --bg:          #eef7f3;
+  --bg-elevated: #ffffff;
+  --surface:     #ffffff;
+  --surface-2:   #e3f0ea;
+  --surface-3:   #d3e6dd;
+
+  --text:        #10241d;
+  --text-dim:    #40584f;
+  --text-faint:  #6b8279;
+
+  --border:      #cbe0d6;
+  --border-soft: #dcece4;
+
+  --accent:        #0d9488;
+  --accent-strong: #0b7b71;
+  --accent-2:      #4d7c0f;
+}
+
+/* ── 淺色 4／櫻粉 ───────────────────────────────────── */
+[data-theme='sakura'] {
+  --bg:          #fdf3f6;
+  --bg-elevated: #ffffff;
+  --surface:     #ffffff;
+  --surface-2:   #f9e8ee;
+  --surface-3:   #f2d8e1;
+
+  --text:        #2a1620;
+  --text-dim:    #614551;
+  --text-faint:  #8d6d79;
+
+  --border:      #eed3dd;
+  --border-soft: #f5e3ea;
+
+  --accent:        #db2777;
+  --accent-strong: #be1c63;
+  --accent-2:      #7c3aed;
+}

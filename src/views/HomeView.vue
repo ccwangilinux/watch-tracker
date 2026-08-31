@@ -269,7 +269,7 @@ function openCategory(id: string) {
 .action--primary {
   background: var(--gradient);
   border: none;
-  color: #fff;
+  color: var(--on-accent);
   box-shadow: var(--shadow-fab);
 }
 </style>

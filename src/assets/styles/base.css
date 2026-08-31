@@ -1,4 +1,6 @@
 @import './tokens.css';
+/* 順序不可對調：themes.css 靠檔案順序覆寫 tokens.css 的預設色 */
+@import './themes.css';
 
 *, *::before, *::after { box-sizing: border-box; }
 

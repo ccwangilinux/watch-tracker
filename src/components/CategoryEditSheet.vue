@@ -175,7 +175,7 @@ function save() {
   min-height: 52px;
   border-radius: var(--r-lg);
   background: var(--gradient);
-  color: #fff;
+  color: var(--on-accent);
   font-weight: 700;
 }
 

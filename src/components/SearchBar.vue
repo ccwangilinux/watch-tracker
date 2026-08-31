@@ -107,7 +107,7 @@ function startVoice() {
 
 .search__btn--mic.is-listening {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   animation: pulse 1.2s ease-in-out infinite;
 }
 
