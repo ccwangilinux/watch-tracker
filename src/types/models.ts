@@ -40,9 +40,9 @@ export type WatchStatus = 'planned' | 'watching' | 'waiting'
 export interface WatchRecord extends Syncable {
   categoryId: string
   title: string
-  /** 1–99 */
+  /** 0 = 未設定，1–99 = 第幾季 */
   season: number
-  /** >= 0 */
+  /** >= 0；0 代表還沒開始看 */
   episode: number
   /** 總秒數 */
   watchTime: number

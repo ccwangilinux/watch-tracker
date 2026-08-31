@@ -22,7 +22,12 @@ const props = defineProps<{
 const { copied, copy } = useClipboard()
 
 const status = computed(() => statusMeta(props.record.status))
+/*
+ * 未設定（0）不顯示；第一季也不顯示——第一季是預設情況，
+ * 標出來只是每張卡片都多一個講廢話的標籤。第二季以後才有辨識價值。
+ */
 const hasSeason = computed(() => props.record.season > 1)
+/** 0 集代表還沒開始看，沒有東西可標 */
 const hasEpisode = computed(() => props.record.episode > 0)
 const hasTime = computed(() => props.record.watchTime > 0)
 const hasMeta = computed(

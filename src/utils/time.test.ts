@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { toSeconds, splitSeconds, formatWatchTime, MAX_WATCH_SECONDS } from './time'
-import { formatSeason, toChineseNumber } from './season'
+import { formatSeason, toChineseNumber, hasSeason, SEASON_UNSET } from './season'
 
 describe('觀看時間', () => {
   it('時分秒與總秒數可互轉', () => {
@@ -32,6 +32,12 @@ describe('季數中文顯示', () => {
     expect(formatSeason(14)).toBe('第十四季')
     expect(formatSeason(20)).toBe('第二十季')
     expect(formatSeason(99)).toBe('第九十九季')
+  })
+
+  it('0 是未設定，不是第零季', () => {
+    expect(formatSeason(SEASON_UNSET)).toBe('未設定')
+    expect(hasSeason(SEASON_UNSET)).toBe(false)
+    expect(hasSeason(1)).toBe(true)
   })
 
   it('整十不會多出尾數', () => {

@@ -13,7 +13,7 @@ import { useRecordStore } from '@/stores/records'
 import { useCategoryStore } from '@/stores/categories'
 import { formatWatchTime } from '@/utils/time'
 import { formatDateTime } from '@/utils/datetime'
-import { formatSeason } from '@/utils/season'
+import { formatSeason, hasSeason, SEASON_UNSET } from '@/utils/season'
 import type { WatchStatus } from '@/types/models'
 
 const props = defineProps<{ recordId?: string; categoryId?: string }>()
@@ -25,8 +25,13 @@ const categoryStore = useCategoryStore()
 const isEdit = computed(() => Boolean(props.recordId))
 
 const title = ref('')
-const season = ref(1)
-const episode = ref(1)
+/*
+ * 新紀錄一律不預填季集：季數空白、集數 0。
+ * 舊的預設值（第一季第 1 集）等於幫使用者先猜一個答案，
+ * 只是剛新增就看到「第 1 集」，分不出是真的看了一集還是還沒開始。
+ */
+const season = ref(SEASON_UNSET)
+const episode = ref(0)
 const watchTime = ref(0)
 const status = ref<WatchStatus | null>(null)
 const completed = ref(false)
@@ -138,7 +143,10 @@ async function doDelete() {
     <div class="field">
       <span class="field__label">第幾季</span>
       <button class="picker" type="button" @click="seasonSheet = true">
-        <span class="picker__value picker__value--season">{{ formatSeason(season) }}</span>
+        <span
+          class="picker__value picker__value--season"
+          :class="{ 'picker__value--empty': !hasSeason(season) }"
+        >{{ formatSeason(season) }}</span>
         <span class="picker__hint">選擇 ›</span>
       </button>
     </div>
@@ -283,6 +291,8 @@ async function doDelete() {
 
 /* 與列表上的標籤同色，兩處才對得起來 */
 .picker__value--season { color: var(--season); }
+/* 未設定不套用季數色，否則看起來像已經填了值 */
+.picker__value--empty { color: var(--text-faint); font-weight: 500; }
 .picker__value--time {
   color: var(--watched);
   font-variant-numeric: tabular-nums;
@@ -315,7 +325,7 @@ async function doDelete() {
   font-weight: 700;
 }
 
-.btn--primary { background: var(--gradient); color: #fff; box-shadow: var(--shadow-fab); }
+.btn--primary { background: var(--gradient); color: var(--on-accent); box-shadow: var(--shadow-fab); }
 .btn--primary:disabled { opacity: 0.4; box-shadow: none; }
 
 .btn--danger {
@@ -330,7 +340,7 @@ async function doDelete() {
   margin-top: var(--sp-4);
   border-radius: var(--r-lg);
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font-weight: 700;
 }
 </style>

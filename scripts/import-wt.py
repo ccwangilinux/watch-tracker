@@ -66,7 +66,8 @@ def parse_line(line: str):
 
     category = parts[0]
     rest = parts[1:]
-    season, episode, watch_time, completed = 1, 0, 0, False
+    # season 0 = 未設定，與 App 的預設一致；文字裡有寫季數時才會被覆蓋
+    season, episode, watch_time, completed = 0, 0, 0, False
 
     # 1. 最右邊的括號：觀看時間或「完結」
     if rest:
