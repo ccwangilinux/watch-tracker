@@ -57,13 +57,17 @@ src/
     sync/      merge.ts（合併演算法）· serialize.ts（Sheets 列轉換）· index.ts（協調）
     google/    auth.ts（GIS token）· sheets.ts（REST API）
     backup.ts  JSON 匯出匯入
-  stores/      Pinia：categories · records · ui · cloud
+    theme.ts   套用主題與開機快取
+  stores/      Pinia：categories · records · ui（含 theme）· cloud
   composables/ useDragSort · useOnline · useClipboard · usePwaUpdate
-  constants/   defaultCategories · palette · status
+  constants/   defaultCategories · palette · status · themes
   views/       9 個路由對應的頁面
+  assets/styles/  tokens.css（預設主題與所有結構 token）· themes.css（8 種主題）· base.css
 ```
 
 **分層規則**：`services/` 是純函式或純資料存取，不得 import 任何 Vue/Pinia——同步演算法尤其必須保持可獨立測試。UI 狀態走 `stores/`，元件不直接碰 `db`。
+
+`services/theme.ts` 是唯一會碰 DOM 的 service（`documentElement` 的 data 屬性、`<meta>`、localStorage）。它仍然不 import Vue/Pinia，由 `stores/ui` 呼叫。
 
 ### 資料格式（全專案統一，不可混用）
 
