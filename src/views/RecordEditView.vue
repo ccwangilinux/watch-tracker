@@ -196,12 +196,14 @@ async function doDelete() {
       <div><dt>建立時間</dt><dd>{{ formatDateTime(createdAt) }}</dd></div>
     </dl>
 
-    <div class="actions">
+    <!-- 刪除不放進固定列：一個誤觸就刪資料的按鈕不該一直停在拇指下 -->
+    <button v-if="isEdit" class="btn btn--danger" type="button" @click="confirmDelete = true">
+      刪除這筆紀錄
+    </button>
+
+    <div class="save-bar">
       <button class="btn btn--primary" type="submit" :disabled="!canSave">
         {{ isEdit ? '儲存' : '新增' }}
-      </button>
-      <button v-if="isEdit" class="btn btn--danger" type="button" @click="confirmDelete = true">
-        刪除這筆紀錄
       </button>
     </div>
   </form>
@@ -344,7 +346,24 @@ async function doDelete() {
 .stamps dt { color: var(--text-faint); }
 .stamps dd { margin: 0; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 
-.actions { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-2); }
+/*
+ * 儲存固定在畫面底部：表單比一個螢幕長，改個集數也要滑到最底才存得到。
+ *
+ * 用 sticky 而不是 fixed：fixed 在 iOS 鍵盤彈出時會抖動錯位，
+ * 而且 sticky 仍留在版面流程裡，捲到最下方時它就停在自己原本的位置，
+ * 不會蓋住備註或時間戳。
+ */
+.save-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  /* 背景延伸到容器左右邊緣，捲動中的內容才不會從縫隙透出來 */
+  margin-left: calc((var(--sp-4) + var(--safe-left)) * -1);
+  margin-right: calc((var(--sp-4) + var(--safe-right)) * -1);
+  padding: var(--sp-3) calc(var(--sp-4) + var(--safe-right))
+           calc(var(--sp-3) + var(--safe-bottom)) calc(var(--sp-4) + var(--safe-left));
+  background: var(--bg);
+}
 
 .btn {
   width: 100%;
