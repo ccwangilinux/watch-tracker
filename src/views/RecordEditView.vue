@@ -153,10 +153,20 @@ async function doDelete() {
 
     <div class="field">
       <span class="field__label">觀看時間</span>
-      <button class="picker" type="button" @click="timeSheet = true">
-        <span class="picker__value picker__value--time">{{ formatWatchTime(watchTime) }}</span>
-        <span class="picker__hint">選擇 ›</span>
-      </button>
+      <!-- 歸零與選擇並排：每季看完就重新計時，是和「選擇時間」一樣頻繁的操作 -->
+      <div class="time-row">
+        <button class="picker picker--grow" type="button" @click="timeSheet = true">
+          <span class="picker__value picker__value--time">{{ formatWatchTime(watchTime) }}</span>
+          <span class="picker__hint">選擇 ›</span>
+        </button>
+        <button
+          class="time-reset"
+          type="button"
+          :disabled="watchTime === 0"
+          @click="watchTime = 0"
+        >歸零</button>
+      </div>
+      <p class="field__hint">新的一季可按「歸零」重新計算，按下儲存才會生效</p>
     </div>
 
     <div class="field">
@@ -286,6 +296,24 @@ async function doDelete() {
   border: 1px solid var(--border-soft);
   border-radius: var(--r-lg);
 }
+
+.time-row { display: flex; align-items: stretch; gap: var(--sp-2); }
+.picker--grow { flex: 1; min-width: 0; }
+
+.time-reset {
+  flex: 0 0 auto;
+  min-height: 56px;
+  padding: 0 var(--sp-4);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-lg);
+}
+
+/* 已經是 0 就沒有東西可歸零，留著能按只會讓人以為按了沒反應 */
+.time-reset:disabled { opacity: 0.4; }
 
 .picker__value { font-size: 17px; font-weight: 600; }
 
