@@ -47,12 +47,21 @@ const statusCounts = computed(() => {
   return counts
 })
 
+/*
+ * 目前選中的狀態即使筆數是 0 也要留著。
+ * 只憑 count > 0 過濾，篩選開著卻沒有符合的紀錄時整個 chip 會消失，
+ * 使用者看到空列表也找不到地方取消篩選。
+ */
 const filterChips = computed(() => [
   ...STATUS_LIST.map((s) => ({
     key: s.key as string, label: s.label, color: s.color, count: statusCounts.value[s.key] ?? 0,
   })),
   { key: 'unset', label: UNSET_LABEL, color: 'var(--text-faint)', count: statusCounts.value.unset },
-].filter((chip) => chip.count > 0))
+].filter((chip) => chip.count > 0 || chip.key === statusFilter.value))
+
+const activeChip = computed(
+  () => filterChips.value.find((chip) => chip.key === statusFilter.value) ?? null,
+)
 
 function toggleFilter(key: string) {
   statusFilter.value = statusFilter.value === key ? null : (key as typeof statusFilter.value)
@@ -62,15 +71,21 @@ const sortLabel = computed(
   () => SORT_OPTIONS.find((o) => o.key === sortKey.value)?.label ?? '排序',
 )
 
-onMounted(() => {
-  lastCategoryId.value = props.categoryId
-  recordStore.loadCategory(props.categoryId)
-})
-
-watch(() => props.categoryId, (id) => {
+/**
+ * 進入某個類別的列表。
+ *
+ * 狀態篩選屬於「當下這個類別」的暫時狀態，換到別的類別就清掉：
+ * 沿用上一個類別選的狀態，只要新類別沒有該狀態的紀錄就是一片空白，
+ * 看起來像資料不見了。回到同一個類別（編輯完返回、重開 App 還原）才保留。
+ */
+function enterCategory(id: string, restoring: boolean) {
+  if (!restoring || lastCategoryId.value !== id) statusFilter.value = null
   lastCategoryId.value = id
   recordStore.loadCategory(id)
-})
+}
+
+onMounted(() => enterCategory(props.categoryId, true))
+watch(() => props.categoryId, (id) => enterCategory(id, false))
 </script>
 
 <template>
@@ -85,7 +100,7 @@ watch(() => props.categoryId, (id) => {
     </h1>
   </header>
 
-  <div v-if="filterChips.length > 1" class="filters">
+  <div v-if="filterChips.length > 1 || statusFilter" class="filters">
     <button
       class="chip"
       :class="{ 'is-active': statusFilter === null }"
@@ -117,6 +132,13 @@ watch(() => props.categoryId, (id) => {
     icon="🔍"
     title="找不到符合的紀錄"
     :message="`這個類別裡沒有片名包含「${searchText}」的紀錄`"
+  />
+
+  <EmptyState
+    v-else-if="visible.length === 0 && activeChip"
+    icon="🏷"
+    :title="`這個類別沒有「${activeChip.label}」的紀錄`"
+    message="點上方的「全部」可以看這個類別的所有紀錄"
   />
 
   <EmptyState
