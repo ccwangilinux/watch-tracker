@@ -74,18 +74,17 @@ const sortLabel = computed(
 /**
  * 進入某個類別的列表。
  *
- * 狀態篩選屬於「當下這個類別」的暫時狀態，換到別的類別就清掉：
- * 沿用上一個類別選的狀態，只要新類別沒有該狀態的紀錄就是一片空白，
- * 看起來像資料不見了。回到同一個類別（編輯完返回、重開 App 還原）才保留。
+ * 每次進來都重置成「全部」：篩選是看列表當下的臨時操作，
+ * 留著只會讓下次進來時少了一部分紀錄，而且未必看得出來是篩選還開著。
  */
-function enterCategory(id: string, restoring: boolean) {
-  if (!restoring || lastCategoryId.value !== id) statusFilter.value = null
+function enterCategory(id: string) {
+  statusFilter.value = null
   lastCategoryId.value = id
   recordStore.loadCategory(id)
 }
 
-onMounted(() => enterCategory(props.categoryId, true))
-watch(() => props.categoryId, (id) => enterCategory(id, false))
+onMounted(() => enterCategory(props.categoryId))
+watch(() => props.categoryId, enterCategory)
 </script>
 
 <template>
