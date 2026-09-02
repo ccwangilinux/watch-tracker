@@ -44,7 +44,7 @@ python3 scripts/import-wt.py wt.txt > out.json # 文字紀錄轉備份 JSON
 
 ## 進度
 
-功能面已完整：專案骨架、IndexedDB 資料層、紀錄 CRUD/搜尋/排序、觀看狀態標籤、8 種主題（4 深 4 淺）、PWA、Google 雲端雙向同步與單向覆蓋、JSON 備份、CI/CD、設定說明頁。
+功能面已完整：專案骨架、IndexedDB 資料層、紀錄 CRUD/搜尋/排序、觀看狀態標籤與快速檢視（依類別分組、狀態間直接切換）、8 種主題（4 深 4 淺）、PWA、Google 雲端雙向同步與單向覆蓋、JSON 備份、CI/CD、設定說明頁。
 
 未做：紀錄列表的拖曳排序（排序邏輯與 `sortOrder` 已就緒，只差 UI；長列表在手機上拖曳體驗不佳，刻意暫緩）。
 
@@ -59,6 +59,7 @@ src/
     backup.ts  JSON 匯出匯入
     theme.ts   套用主題與開機快取
   stores/      Pinia：categories · records · ui（含 theme）· cloud
+  components/  共用 UI：卡片 · 底部抽屜 · 各種 picker · StatusTabs（快速檢視切換列）
   composables/ useDragSort · useOnline · useClipboard · usePwaUpdate
   constants/   defaultCategories · palette · status · themes
   views/       9 個路由對應的頁面
