@@ -57,8 +57,34 @@ export async function createRecord(input: RecordInput): Promise<WatchRecord> {
   return record
 }
 
-export async function updateRecord(id: string, patch: Partial<RecordInput>): Promise<void> {
-  await db.watchRecords.update(id, { ...patch, updatedAt: now() })
+/**
+ * 更新紀錄。回傳這次是否換了類別，讓上層知道要不要一併更新別的類別的計數。
+ */
+export async function updateRecord(
+  id: string,
+  patch: Partial<RecordInput>,
+): Promise<boolean> {
+  const changes: Partial<WatchRecord> = { ...patch, updatedAt: now() }
+
+  const target = patch.categoryId
+  let moved = false
+
+  /*
+   * 換類別時 sortOrder 要在新類別裡重算。
+   * 沿用舊類別的值會與新類別既有紀錄撞號，自訂排序看起來就像插在隨機位置。
+   */
+  if (target) {
+    const current = await db.watchRecords.get(id)
+    moved = current !== undefined && current.categoryId !== target
+
+    if (moved) {
+      const siblings = await listByCategory(target)
+      changes.sortOrder = siblings.reduce((max, r) => Math.max(max, r.sortOrder), -1) + 1
+    }
+  }
+
+  await db.watchRecords.update(id, changes)
+  return moved
 }
 
 export async function deleteRecord(id: string): Promise<void> {

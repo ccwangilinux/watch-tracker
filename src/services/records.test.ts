@@ -102,6 +102,31 @@ describe('updateRecord', () => {
     expect(updated?.episode).toBe(5)
     expect(updated!.updatedAt > record.updatedAt).toBe(true)
   })
+
+  it('換類別時 sortOrder 在新類別裡重算，不與既有紀錄撞號', async () => {
+    await createRecord(baseInput({ categoryId: 'cat-2', title: '已在新類別的 A' }))
+    await createRecord(baseInput({ categoryId: 'cat-2', title: '已在新類別的 B' }))
+    // 舊類別裡是第一筆，sortOrder 為 0——直接搬過去會與新類別的 A 撞號
+    const moving = await createRecord(baseInput({ title: '要搬家的' }))
+    expect(moving.sortOrder).toBe(0)
+
+    const moved = await updateRecord(moving.id, { categoryId: 'cat-2' })
+
+    expect(moved).toBe(true)
+    expect((await db.watchRecords.get(moving.id))?.sortOrder).toBe(2)
+    expect(await listByCategory(CATEGORY)).toHaveLength(0)
+    expect(await listByCategory('cat-2')).toHaveLength(3)
+  })
+
+  it('類別沒變時回報未搬移，也不動 sortOrder', async () => {
+    await createRecord(baseInput({ title: 'A' }))
+    const record = await createRecord(baseInput({ title: 'B' }))
+
+    const moved = await updateRecord(record.id, { categoryId: CATEGORY, episode: 3 })
+
+    expect(moved).toBe(false)
+    expect((await db.watchRecords.get(record.id))?.sortOrder).toBe(record.sortOrder)
+  })
 })
 
 describe('sortRecords', () => {

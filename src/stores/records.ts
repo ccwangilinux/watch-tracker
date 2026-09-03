@@ -32,8 +32,9 @@ export const useRecordStore = defineStore('records', () => {
   }
 
   async function update(id: string, patch: Partial<RecordInput>) {
-    await service.updateRecord(id, patch)
-    await reload()
+    // 換了類別就等於兩個類別各少一筆、各多一筆，首頁的計數要跟著更新
+    const moved = await service.updateRecord(id, patch)
+    await (moved ? Promise.all([reload(), refreshCounts()]) : reload())
   }
 
   async function remove(id: string) {

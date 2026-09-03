@@ -8,6 +8,7 @@ import StatusPicker from '@/components/StatusPicker.vue'
 import SeasonPicker from '@/components/SeasonPicker.vue'
 import DurationPicker from '@/components/DurationPicker.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
+import CategoryPicker from '@/components/CategoryPicker.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useRecordStore } from '@/stores/records'
 import { useCategoryStore } from '@/stores/categories'
@@ -38,6 +39,7 @@ const completed = ref(false)
 const note = ref('')
 const resolvedCategoryId = ref(props.categoryId ?? '')
 
+const categorySheet = ref(false)
 const seasonSheet = ref(false)
 const timeSheet = ref(false)
 const confirmDelete = ref(false)
@@ -119,10 +121,18 @@ async function doDelete() {
     <h1 class="head__title">{{ isEdit ? '修改紀錄' : '新增紀錄' }}</h1>
   </header>
 
-  <p v-if="category" class="context">
-    <span class="context__icon" :style="{ '--c': category.color }">{{ category.icon }}</span>
-    {{ category.name }}
-  </p>
+  <!-- 類別可以改：片子記錯類別、或後來想重新歸類，不必刪掉重建一筆 -->
+  <button v-if="loaded" class="context" type="button" @click="categorySheet = true">
+    <span
+      v-if="category"
+      class="context__icon"
+      :style="{ '--c': category.color }"
+    >{{ category.icon }}</span>
+    <span class="context__name" :class="{ 'context__name--empty': !category }">
+      {{ category?.name ?? '選擇類別' }}
+    </span>
+    <span class="context__hint">切換 ›</span>
+  </button>
 
   <form v-if="loaded" class="form" @submit.prevent="save">
     <label class="field">
@@ -208,6 +218,12 @@ async function doDelete() {
     </div>
   </form>
 
+  <CategoryPicker
+    v-model="resolvedCategoryId"
+    v-model:open="categorySheet"
+    :categories="categoryStore.items"
+  />
+
   <BottomSheet v-model="seasonSheet" title="選擇季數">
     <SeasonPicker v-model="season" />
     <button class="sheet-done" type="button" @click="seasonSheet = false">確定</button>
@@ -237,10 +253,20 @@ async function doDelete() {
   display: inline-flex;
   align-items: center;
   gap: var(--sp-2);
-  margin-bottom: var(--sp-5);
+  min-height: var(--touch);
+  margin-bottom: var(--sp-4);
+  padding: 0 var(--sp-3) 0 var(--sp-2);
   font-size: 14px;
+  font-weight: 600;
   color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-full);
 }
+
+/* 還沒有類別（例如原類別已被刪除）時不假裝已經選好了 */
+.context__name--empty { color: var(--text-faint); font-weight: 500; }
+.context__hint { font-size: 13px; color: var(--text-faint); }
 
 .context__icon {
   width: 26px;
