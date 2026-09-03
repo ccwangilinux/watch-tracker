@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 npm run dev        # dev server，埠號固定 5174（strictPort）
-npm test           # vitest，87 項
+npm test           # vitest，89 項
 npm run build      # vue-tsc -b && vite build
 npm run preview    # 測 PWA 必須用這個，dev 模式不註冊 Service Worker
 npx vitest run src/services/sync   # 只跑同步相關測試
@@ -147,6 +147,8 @@ src/
 主題分兩層覆寫：`[data-scheme="dark|light"]` 放狀態色、季集時間色、語意色、遮罩與陰影；`[data-theme="…"]` 每個主題只放 13 個值（5 層背景、3 級文字、2 種線條、3 個主色）。兩者都是屬性選擇器、同一 specificity，**scheme 必須寫在 theme 之前**。
 
 主題存 `meta` 表、**不進雲端同步**（換裝置本來就該各自決定），另在 localStorage 留一份開機快取供 `index.html` 的內聯腳本防閃爍。
+
+**編輯頁的類別可以點開切換**：記錯類別、或後來想重新歸類都是常態，不該只能刪掉重建一筆。搬到新類別時 `sortOrder` 會在新類別裡重算成最後一位——沿用舊類別的值會與新類別既有紀錄撞號，自訂排序看起來就像插在隨機位置。
 
 **觀看時間旁固定有「歸零」**：每季看完就重新計時是常態操作，歸零鍵與時間選擇並排在同一列上，值已是 0 時停用。歸零只改表單上的值，按下儲存才寫入。
 
